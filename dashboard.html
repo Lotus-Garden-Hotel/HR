@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Analytics Dashboard — Lotus Garden</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080d16;--surf:#0f1520;--surf2:#141d2b;--surf3:#1a2436;
+  --teal:#12b8a6;--teal-d:#0d8a7b;--teal-dim:rgba(18,184,166,.1);
+  --brd:rgba(255,255,255,.06);--brd2:rgba(255,255,255,.04);
+  --txt:#dce8f0;--txt-m:#5e7382;--txt-s:#3a4d5c;
+  --red:#f06b6b;--red-dim:rgba(240,107,107,.1);
+  --green:#38d4a0;--green-dim:rgba(56,212,160,.1);
+  --amber:#f0b055;--amber-dim:rgba(240,176,85,.1);
+  --blue:#5e9fd4;
+  --font:'DM Sans',sans-serif;--head:'Sora',sans-serif;
+  --r:10px;--r2:14px;--r3:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:100vh}
+
+/* ─── LOGIN OVERLAY ─── */
+#login-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(8,13,22,.96);
+  display:flex;justify-content:center;align-items:center;
+  backdrop-filter:blur(6px);
+}
+.login-panel{
+  background:var(--surf);border:1px solid rgba(18,184,166,.18);
+  border-radius:var(--r3);padding:44px 40px 38px;width:100%;max-width:400px;
+  box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(18,184,166,.06),inset 0 1px 0 rgba(255,255,255,.04);
+  text-align:center;
+}
+.lp-icon{
+  width:52px;height:52px;background:var(--teal-dim);border:1px solid rgba(18,184,166,.2);
+  border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;
+}
+.lp-icon svg{width:24px;height:24px;color:var(--teal)}
+.login-panel h2{font-family:var(--head);font-size:19px;font-weight:600;color:var(--txt);margin-bottom:4px}
+.login-panel p{font-size:12.5px;color:var(--txt-m);margin-bottom:26px;line-height:1.55}
+.lp-input{
+  width:100%;background:var(--surf2);border:1px solid var(--brd);
+  border-radius:9px;padding:13px 16px;font-family:var(--font);font-size:15px;
+  color:var(--txt);text-align:center;letter-spacing:.08em;
+  transition:border-color .2s,box-shadow .2s;margin-bottom:4px;
+}
+.lp-input:focus{outline:none;border-color:rgba(18,184,166,.45);box-shadow:0 0 0 3px rgba(18,184,166,.08)}
+.lp-input::placeholder{color:var(--txt-s);letter-spacing:.04em}
+.btn-teal{
+  width:100%;padding:13px;margin-top:16px;
+  background:linear-gradient(135deg,#12b8a6,#0d7a6e);
+  color:#050c10;border:none;border-radius:9px;
+  font-family:var(--font);font-size:13px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  cursor:pointer;transition:opacity .2s,transform .15s;box-shadow:0 4px 20px rgba(18,184,166,.22);
+}
+.btn-teal:hover{opacity:.9;transform:translateY(-1px)}
+.btn-teal:active{transform:translateY(0)}
+#lp-err{font-size:12px;color:var(--red);margin-top:10px;min-height:18px;display:none}
+
+/* ─── MAIN ─── */
+#main-content{display:none;max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+
+/* HEADER */
+.dash-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:28px;padding-bottom:20px;
+  border-bottom:1px solid var(--brd);
+}
+.dh-left{display:flex;align-items:center;gap:14px}
+.dh-logo{
+  width:40px;height:40px;background:var(--teal-dim);border:1px solid rgba(18,184,166,.2);
+  border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.dh-logo svg{width:20px;height:20px;color:var(--teal)}
+.dh-title{font-family:var(--head);font-size:19px;font-weight:600;color:var(--txt)}
+.dh-sub{font-size:11.5px;color:var(--txt-m);margin-top:2px;letter-spacing:.02em}
+.dh-actions{display:flex;gap:10px}
+.btn-outline{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:8px;border:1px solid var(--brd);
+  background:var(--surf);color:var(--txt-m);font-family:var(--font);
+  font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;
+  text-decoration:none;
+}
+.btn-outline:hover{border-color:rgba(18,184,166,.3);color:var(--teal);background:var(--teal-dim)}
+.btn-outline svg{width:14px;height:14px}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+@media(max-width:860px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.kpi-grid{grid-template-columns:1fr 1fr}}
+.kpi{
+  background:var(--surf);border:1px solid var(--brd);border-radius:var(--r2);
+  padding:18px 18px 16px;position:relative;overflow:hidden;
+  transition:border-color .2s;
+}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r2) var(--r2) 0 0;background:var(--kpi-color,var(--teal))}
+.kpi:hover{border-color:rgba(255,255,255,.1)}
+.kpi-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;background:var(--kpi-bg,var(--teal-dim));flex-shrink:0}
+.kpi-icon svg{width:16px;height:16px;color:var(--kpi-color,var(--teal))}
+.kpi-val{font-family:var(--head);font-size:28px;font-weight:700;color:var(--txt);line-height:1;margin-bottom:4px}
+.kpi-lbl{font-size:11.5px;color:var(--txt-m);font-weight:400;letter-spacing:.02em}
+.kpi-trend{font-size:11px;margin-top:8px;display:flex;align-items:center;gap:4px}
+.kpi.k-teal{--kpi-color:var(--teal);--kpi-bg:var(--teal-dim)}
+.kpi.k-green{--kpi-color:var(--green);--kpi-bg:var(--green-dim)}
+.kpi.k-red{--kpi-color:var(--red);--kpi-bg:var(--red-dim)}
+.kpi.k-amber{--kpi-color:var(--amber);--kpi-bg:var(--amber-dim)}
+
+/* CHARTS GRID */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+@media(max-width:720px){.charts-grid{grid-template-columns:1fr}}
+.card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r2);padding:22px 22px 18px}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.card-title{font-family:var(--head);font-size:13.5px;font-weight:600;color:var(--txt)}
+.card-badge{font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:20px;letter-spacing:.05em}
+.badge-teal{background:var(--teal-dim);color:var(--teal);border:1px solid rgba(18,184,166,.2)}
+.badge-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(240,107,107,.2)}
+.chart-wrap{position:relative;height:220px}
+
+/* TABLE */
+.table-card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r2);overflow:hidden}
+.table-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:18px 20px 14px;border-bottom:1px solid var(--brd);
+}
+.th-left{display:flex;align-items:center;gap:12px}
+.table-title{font-family:var(--head);font-size:13.5px;font-weight:600;color:var(--txt)}
+.search-wrap{position:relative;display:flex;align-items:center}
+.search-ico{position:absolute;left:10px;width:13px;height:13px;color:var(--txt-m)}
+.search-input{
+  background:var(--surf2);border:1px solid var(--brd);border-radius:8px;
+  padding:7px 12px 7px 30px;font-family:var(--font);font-size:12.5px;color:var(--txt);
+  width:200px;transition:border-color .2s;
+}
+.search-input:focus{outline:none;border-color:rgba(18,184,166,.35)}
+.search-input::placeholder{color:var(--txt-s)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surf2)}
+th{
+  padding:11px 16px;font-family:var(--head);font-size:10.5px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--txt-m);text-align:left;
+  white-space:nowrap;border-bottom:1px solid var(--brd);
+}
+tbody tr{border-bottom:1px solid var(--brd2);transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surf2)}
+td{padding:12px 16px;font-size:13px;color:var(--txt)}
+.td-time{font-size:11.5px;color:var(--txt-m);font-variant-numeric:tabular-nums}
+.td-nik{font-size:12px;font-weight:500;color:var(--teal);letter-spacing:.04em}
+.td-nama{font-weight:500}
+.td-dept span{
+  display:inline-block;padding:2px 9px;border-radius:6px;font-size:11px;font-weight:500;
+  background:rgba(94,159,212,.1);color:var(--blue);border:1px solid rgba(94,159,212,.2);
+}
+.score-bar-wrap{display:flex;align-items:center;gap:8px}
+.score-num{font-family:var(--head);font-weight:600;font-size:14px;min-width:28px}
+.score-bar{flex:1;max-width:70px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.score-fill{height:100%;border-radius:2px;transition:width .4s}
+.badge-status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
+.badge-ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(56,212,160,.2)}
+.badge-re{background:var(--red-dim);color:var(--red);border:1px solid rgba(240,107,107,.2)}
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.7}
+.btn-reset{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 11px;border-radius:7px;border:1px solid rgba(240,107,107,.25);
+  background:rgba(240,107,107,.06);color:var(--red);font-family:var(--font);
+  font-size:11px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.btn-reset:hover{background:rgba(240,107,107,.14);border-color:rgba(240,107,107,.5)}
+.btn-reset:disabled{opacity:.45;cursor:not-allowed}
+.btn-reset svg{width:11px;height:11px}
+.no-data{text-align:center;padding:40px 20px;color:var(--txt-m);font-size:13px}
+.empty-ico{font-size:28px;margin-bottom:8px;opacity:.4}
+@media print{.no-print{display:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN OVERLAY ═══ -->
+<div id="login-overlay">
+  <div class="login-panel">
+    <div class="lp-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+      </svg>
+    </div>
+    <h2>HR Executive Access</h2>
+    <p>Masukkan password admin untuk mengakses<br>dashboard analytics karyawan.</p>
+    <input type="password" id="admin-pw" class="lp-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')unlockDashboard()">
+    <button class="btn-teal" onclick="unlockDashboard()">Masuk Dashboard</button>
+    <div id="lp-err"></div>
+  </div>
+</div>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<div id="main-content">
+
+  <!-- HEADER -->
+  <div class="dash-header">
+    <div class="dh-left">
+      <div class="dh-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20C12 20 4 14 4 8.5C4 5.5 7.5 4 12 7C16.5 4 20 5.5 20 8.5C20 14 12 20 12 20Z"/>
+          <circle cx="12" cy="7" r="1.5" fill="currentColor"/>
+        </svg>
+      </div>
+      <div>
+        <div class="dh-title">Dashboard Executive Analytics</div>
+        <div class="dh-sub">Lotus Garden Hotel Kediri &mdash; HR Intelligence</div>
+      </div>
+    </div>
+    <div class="dh-actions no-print">
+      <button class="btn-outline" onclick="unlockDashboard()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+        Refresh
+      </button>
+      <button class="btn-outline no-print" onclick="window.print()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Cetak PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="kpi k-teal">
+      <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+      <div class="kpi-val" id="k-total">—</div>
+      <div class="kpi-lbl">Total Peserta</div>
+    </div>
+    <div class="kpi k-amber">
+      <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="kpi-val" id="k-avg">—</div>
+      <div class="kpi-lbl">Rata-rata Skor</div>
+    </div>
+    <div class="kpi k-green">
+      <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <div class="kpi-val" id="k-pass">—</div>
+      <div class="kpi-lbl">Tingkat Kelulusan</div>
+    </div>
+    <div class="kpi k-red">
+      <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div class="kpi-val" id="k-retrain">—</div>
+      <div class="kpi-lbl">Perlu Retraining</div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="charts-grid">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Leaderboard Departemen</div>
+        <span class="card-badge badge-teal">Rata-rata Skor</span>
+      </div>
+      <div class="chart-wrap"><canvas id="leaderboardChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Skill Gap Analysis</div>
+        <span class="card-badge badge-red">Jawaban Salah</span>
+      </div>
+      <div class="chart-wrap"><canvas id="skillGapChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-head">
+      <div class="th-left">
+        <span class="table-title">Laporan Individu</span>
+      </div>
+      <div class="no-print search-wrap">
+        <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="search-box" placeholder="Cari NIK / Nama / Dept..." oninput="filterTable()">
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="result-table">
+        <thead>
+          <tr>
+            <th>Waktu</th><th>NIK</th><th>Nama</th><th>Dept</th><th>Skor</th><th>Status</th><th class="no-print">Aksi HR</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbzUUVMN8pQgeePiB42W5gtyF6lw99Fg3J9Jo59PltBWcg-fybwsh5d7BUyrvyc4Ejz8/exec';
+let currentPW='',lbChart=null,allRows=[];
+
+// Set Chart.js global defaults for dark theme
+Chart.defaults.color='#5e7382';
+Chart.defaults.borderColor='rgba(255,255,255,0.05)';
+Chart.defaults.font.family="'DM Sans',sans-serif";
+
+async function unlockDashboard(){
+  const pw=document.getElementById('admin-pw').value;
+  const errEl=document.getElementById('lp-err');
+  errEl.style.display='none';
+  try{
+    const res=await fetch(`${APPS_SCRIPT_URL}?action=getAnalytics&pw=${encodeURIComponent(pw)}`);
+    const data=await res.json();
+    if(data.status==='success'){
+      currentPW=pw;
+      document.getElementById('login-overlay').style.display='none';
+      document.getElementById('main-content').style.display='block';
+      renderKPI(data.individuals);
+      renderTable(data.individuals);
+      renderLeaderboard(data.leaderboard);
+    }else{
+      errEl.innerText=data.message||'Password salah.';errEl.style.display='block';
+    }
+  }catch(e){errEl.innerText='Koneksi gagal. Periksa URL Apps Script.';errEl.style.display='block';}
+}
+
+function renderKPI(individuals){
+  const total=individuals.length;
+  const avg=total?Math.round(individuals.reduce((a,u)=>a+u.total,0)/total):0;
+  const pass=individuals.filter(u=>u.total>=75).length;
+  const pct=total?Math.round(pass/total*100):0;
+  const retrain=total-pass;
+  document.getElementById('k-total').innerText=total;
+  document.getElementById('k-avg').innerText=avg;
+  document.getElementById('k-pass').innerText=pct+'%';
+  document.getElementById('k-retrain').innerText=retrain;
+}
+
+function renderTable(individuals){
+  allRows=individuals;
+  buildTable(individuals);
+}
+
+function buildTable(rows){
+  const tbody=document.getElementById('table-body');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="7"><div class="no-data"><div class="empty-ico">📋</div>Belum ada data peserta ujian.</div></td></tr>';return;}
+  tbody.innerHTML=rows.map(u=>{
+    const isOk=u.total>=75;
+    const scoreColor=isOk?'#38d4a0':u.total>=50?'#f0b055':'#f06b6b';
+    const scoreW=Math.max(4,u.total)+'%';
+    return `<tr>
+      <td class="td-time">${u.ts}</td>
+      <td class="td-nik">${u.nik}</td>
+      <td class="td-nama">${u.nama}</td>
+      <td class="td-dept"><span>${u.dept}</span></td>
+      <td>
+        <div class="score-bar-wrap">
+          <span class="score-num" style="color:${scoreColor}">${u.total}</span>
+          <div class="score-bar"><div class="score-fill" style="width:${scoreW};background:${scoreColor}"></div></div>
+        </div>
+      </td>
+      <td>
+        <span class="badge-status ${isOk?'badge-ok':'badge-re'}">
+          <span class="badge-dot"></span>${u.status}
+        </span>
+      </td>
+      <td class="no-print">
+        <button class="btn-reset" onclick="resetUser(this,'${u.nik}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+          Reset Akses
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(){
+  const q=document.getElementById('search-box').value.toLowerCase().trim();
+  if(!q){buildTable(allRows);return;}
+  buildTable(allRows.filter(u=>
+    u.nik.toLowerCase().includes(q)||
+    u.nama.toLowerCase().includes(q)||
+    u.dept.toLowerCase().includes(q)
+  ));
+}
+
+async function resetUser(btn,nik){
+  if(!confirm('Hapus data NIK '+nik+'?\nKaryawan ini akan bisa mengulang ujian.'))return;
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11" style="animation:spin .7s linear infinite;display:inline-block"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg> Proses...';
+  btn.disabled=true;
+  try{
+    const url=APPS_SCRIPT_URL+'?action=resetUser&nik='+encodeURIComponent(nik)+'&pw='+encodeURIComponent(currentPW);
+    const res=await fetch(url);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const result=await res.json();
+    if(result.status==='success'){
+      alert('✅ '+result.message);unlockDashboard();
+    }else{
+      alert('❌ Gagal: '+result.message);
+      btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Reset Akses';
+      btn.disabled=false;
+    }
+  }catch(e){
+    alert('❌ Error: '+e.message);
+    btn.innerHTML='Reset Akses';btn.disabled=false;
+  }
+}
+
+function renderLeaderboard(lb){
+  const ctx=document.getElementById('leaderboardChart').getContext('2d');
+  if(lbChart)lbChart.destroy();
+  const colors=lb.data.map(v=>v>=75?'rgba(18,184,166,0.75)':v>=50?'rgba(240,176,85,0.75)':'rgba(240,107,107,0.75)');
+  lbChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:lb.labels,
+      datasets:[{
+        label:'Rata-rata Skor',data:lb.data,
+        backgroundColor:colors,
+        borderRadius:6,borderSkipped:false,
+        borderWidth:0,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{
+        backgroundColor:'#141d2b',borderColor:'rgba(255,255,255,.08)',borderWidth:1,
+        titleColor:'#dce8f0',bodyColor:'#5e7382',cornerRadius:8,padding:10,
+        callbacks:{label:ctx=>'Skor: '+ctx.raw}
+      }},
+      scales:{
+        y:{beginAtZero:true,max:100,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5e7382',font:{size:11}}},
+        x:{grid:{display:false},ticks:{color:'#5e7382',font:{size:11}}}
+      }
+    }
+  });
+}
+
+// Skill Gap — static mockup, styled with dark theme
+new Chart(document.getElementById('skillGapChart').getContext('2d'),{
+  type:'bar',
+  data:{
+    labels:['SOP Evakuasi','Complaint Handling','Chemical Safety','Upselling'],
+    datasets:[{
+      label:'Jawaban Salah',
+      data:[12,19,8,15],
+      backgroundColor:['rgba(240,107,107,0.65)','rgba(240,107,107,0.85)','rgba(240,107,107,0.5)','rgba(240,107,107,0.75)'],
+      borderRadius:4,borderSkipped:false,
+    }]
+  },
+  options:{
+    indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{
+      backgroundColor:'#141d2b',borderColor:'rgba(255,255,255,.08)',borderWidth:1,
+      titleColor:'#dce8f0',bodyColor:'#5e7382',cornerRadius:8,padding:10,
+    }},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5e7382',font:{size:11}}},
+      y:{grid:{display:false},ticks:{color:'#5e7382',font:{size:11}}}
+    }
+  }
+});
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body>
+</html>
