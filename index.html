@@ -3,95 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Evaluasi Karyawan — Lotus Garden Hotel</title>
+<title>Portal Ujian Karyawan — Lotus Garden Hotel</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #080c16;
-  --surf: #0f1520;
-  --surf2: #161e2e;
-  --gold: #c9a84c;
-  --gold-d: #a07a2c;
-  --gold-dim: rgba(201,168,76,0.10);
-  --brd: rgba(201,168,76,0.12);
-  --brd2: rgba(255,255,255,0.06);
-  --txt: #ede8de;
-  --txt-m: #7a8899;
-  --red: #e05c5c;
-  --green: #3dcc8a;
-  --font: 'DM Sans',sans-serif;
-  --serif: 'Playfair Display',serif;
-}
+:root{--bg:#080c16;--surf:#0f1520;--surf2:#161e2e;--gold:#c9a84c;--gold-d:#a07a2c;--gold-dim:rgba(201,168,76,.10);--brd:rgba(201,168,76,.12);--brd2:rgba(255,255,255,.06);--txt:#ede8de;--txt-m:#7a8899;--red:#e05c5c;--green:#3dcc8a;--font:'DM Sans',sans-serif;--serif:'Playfair Display',serif}
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{
-  font-family:var(--font);
-  background:var(--bg);
-  color:var(--txt);
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  padding:24px 16px;
-  -webkit-user-select:none;user-select:none;
-  overflow-x:hidden;
-}
-
-/* BG orbs */
+body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;justify-content:center;padding:24px 16px;-webkit-user-select:none;user-select:none;overflow-x:hidden}
 .orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0}
-.orb1{width:600px;height:600px;top:-15%;left:-15%;background:radial-gradient(circle,rgba(201,168,76,0.035) 0%,transparent 65%)}
-.orb2{width:500px;height:500px;bottom:-10%;right:-10%;background:radial-gradient(circle,rgba(91,130,210,0.03) 0%,transparent 65%)}
-
+.orb1{width:600px;height:600px;top:-15%;left:-15%;background:radial-gradient(circle,rgba(201,168,76,.035) 0%,transparent 65%)}
+.orb2{width:500px;height:500px;bottom:-10%;right:-10%;background:radial-gradient(circle,rgba(91,130,210,.03) 0%,transparent 65%)}
 .wrap{position:relative;z-index:1;width:100%;max-width:680px;display:flex;flex-direction:column;align-items:center}
 
-/* ── LOGIN ── */
 #login-section{width:100%;max-width:460px;display:flex;flex-direction:column;justify-content:center;min-height:100svh;padding:32px 0}
 .brand{text-align:center;margin-bottom:36px}
 .brand-logo{width:68px;height:68px;margin:0 auto 14px}
 .brand-name{font-family:var(--serif);font-size:24px;font-weight:600;color:var(--gold);letter-spacing:.06em;line-height:1.2}
 .brand-sub{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--txt-m);margin-top:5px}
 .divider-brand{width:40px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:14px auto 0}
-
-.login-card{
-  background:var(--surf);
-  border:1px solid var(--brd);
-  border-radius:18px;
-  padding:38px 34px 32px;
-  box-shadow:0 32px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(201,168,76,.06);
-}
+.login-card{background:var(--surf);border:1px solid var(--brd);border-radius:18px;padding:38px 34px 32px;box-shadow:0 32px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(201,168,76,.06)}
 .login-card h2{font-family:var(--serif);font-size:21px;font-weight:500;color:var(--txt);margin-bottom:5px}
 .login-card .sub{font-size:13px;color:var(--txt-m);margin-bottom:28px;line-height:1.55}
 .f-label{display:block;font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--txt-m);margin-bottom:8px}
-.f-input{
-  width:100%;background:var(--surf2);
-  border:1px solid var(--brd2);border-radius:9px;
-  padding:13px 16px;font-family:var(--font);font-size:16px;font-weight:400;color:var(--txt);
-  letter-spacing:.04em;transition:border-color .2s,box-shadow .2s;
-  -webkit-user-select:text;user-select:text;
-}
+.f-input{width:100%;background:var(--surf2);border:1px solid var(--brd2);border-radius:9px;padding:13px 16px;font-family:var(--font);font-size:16px;font-weight:400;color:var(--txt);letter-spacing:.04em;transition:border-color .2s,box-shadow .2s;-webkit-user-select:text;user-select:text}
 .f-input::placeholder{color:var(--txt-m);opacity:.6}
 .f-input:focus{outline:none;border-color:rgba(201,168,76,.5);box-shadow:0 0 0 3px rgba(201,168,76,.08)}
-.btn-gold{
-  width:100%;padding:14px;margin-top:20px;
-  background:linear-gradient(135deg,#d4ac52 0%,#a07a2c 100%);
-  color:#080c16;border:none;border-radius:9px;
-  font-family:var(--font);font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
-  cursor:pointer;transition:opacity .2s,transform .15s,box-shadow .2s;
-  box-shadow:0 4px 20px rgba(201,168,76,.2);
-}
+.btn-gold{width:100%;padding:14px;margin-top:20px;background:linear-gradient(135deg,#d4ac52 0%,#a07a2c 100%);color:#080c16;border:none;border-radius:9px;font-family:var(--font);font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .2s,transform .15s,box-shadow .2s;box-shadow:0 4px 20px rgba(201,168,76,.2)}
 .btn-gold:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 6px 28px rgba(201,168,76,.3)}
-.btn-gold:active{transform:translateY(0);opacity:1}
+.btn-gold:active{transform:translateY(0)}
 .btn-gold:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
 #login-msg{margin-top:14px;font-size:13px;text-align:center;display:none;min-height:20px;line-height:1.5;transition:color .3s}
 
-/* ── QUIZ ── */
 #quiz-section{display:none;width:100%;padding-top:16px}
-
-.top-bar{
-  display:flex;justify-content:space-between;align-items:center;
-  background:var(--surf);border:1px solid var(--brd);border-radius:13px;
-  padding:13px 18px;position:sticky;top:10px;z-index:100;margin-bottom:16px;
-  box-shadow:0 8px 32px rgba(0,0,0,.5);backdrop-filter:blur(12px);
-}
+.top-bar{display:flex;justify-content:space-between;align-items:center;background:var(--surf);border:1px solid var(--brd);border-radius:13px;padding:13px 18px;position:sticky;top:10px;z-index:100;margin-bottom:16px;box-shadow:0 8px 32px rgba(0,0,0,.5);backdrop-filter:blur(12px)}
 .timer-inner{display:flex;align-items:center;gap:7px}
 .timer-ico{width:16px;height:16px;color:var(--gold);flex-shrink:0}
 #timer-display{font-size:15px;font-weight:600;color:var(--gold);letter-spacing:.06em;font-variant-numeric:tabular-nums;transition:color .5s}
@@ -103,31 +46,17 @@ body{
 .prog-bar{height:3px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;margin-bottom:16px}
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),#e8c97a);border-radius:2px;transition:width .4s ease;width:0%}
 
-.notice{
-  background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.1);
-  border-radius:9px;padding:11px 15px;font-size:12px;color:var(--txt-m);
-  line-height:1.6;margin-bottom:20px;
-}
+.notice{background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.1);border-radius:9px;padding:11px 15px;font-size:12px;color:var(--txt-m);line-height:1.6;margin-bottom:20px}
 .notice strong{color:rgba(201,168,76,.9)}
 
-.q-card{
-  background:var(--surf);border:1px solid var(--brd2);border-radius:13px;
-  padding:22px 22px 18px;margin-bottom:12px;
-  transition:border-color .2s,box-shadow .2s;
-}
+.q-card{background:var(--surf);border:1px solid var(--brd2);border-radius:13px;padding:22px 22px 18px;margin-bottom:12px;transition:border-color .2s,box-shadow .2s}
 .q-card.answered{border-color:rgba(201,168,76,.28);box-shadow:0 2px 12px rgba(201,168,76,.04)}
+.q-card.critical-q{border-color:rgba(224,92,92,.25)}
 .q-tag{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;opacity:.8}
+.q-tag.crit{color:var(--red);opacity:.9}
 .q-text{font-size:14.5px;font-weight:500;color:var(--txt);line-height:1.6;margin-bottom:15px}
 .opts{display:flex;flex-direction:column;gap:7px}
-
-.opt{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 13px;border-radius:8px;
-  border:1px solid rgba(255,255,255,.05);background:var(--surf2);
-  cursor:pointer;font-size:13.5px;color:var(--txt-m);
-  transition:all .15s;
-  -webkit-user-select:none;user-select:none;
-}
+.opt{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:8px;border:1px solid rgba(255,255,255,.05);background:var(--surf2);cursor:pointer;font-size:13.5px;color:var(--txt-m);transition:all .15s;-webkit-user-select:none;user-select:none}
 .opt:hover{border-color:rgba(201,168,76,.22);color:var(--txt)}
 .opt input{display:none}
 .o-dot{width:17px;height:17px;border-radius:50%;border:1.5px solid rgba(255,255,255,.18);flex-shrink:0;display:grid;place-items:center;transition:all .15s}
@@ -138,55 +67,34 @@ body{
 .o-key{font-size:11.5px;font-weight:600;color:var(--txt-m);min-width:14px}
 .opt:has(input:checked) .o-key{color:var(--gold)}
 
-.btn-submit{
-  width:100%;padding:15px;margin-top:6px;margin-bottom:48px;
-  background:linear-gradient(135deg,#d4ac52 0%,#a07a2c 100%);
-  color:#080c16;border:none;border-radius:10px;
-  font-family:var(--font);font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
-  cursor:pointer;transition:opacity .2s,transform .15s;
-  box-shadow:0 4px 20px rgba(201,168,76,.2);
-}
+.btn-submit{width:100%;padding:15px;margin-top:6px;margin-bottom:48px;background:linear-gradient(135deg,#d4ac52 0%,#a07a2c 100%);color:#080c16;border:none;border-radius:10px;font-family:var(--font);font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .2s,transform .15s;box-shadow:0 4px 20px rgba(201,168,76,.2)}
 .btn-submit:hover{opacity:.9;transform:translateY(-1px)}
 .btn-submit:disabled{opacity:.4;cursor:not-allowed;transform:none}
 
-/* ── RESULT ── */
 #result-section{display:none;width:100%;max-width:460px;flex-direction:column;align-items:center;justify-content:center;min-height:100svh;padding:32px 0}
-.result-card{
-  background:var(--surf);border:1px solid var(--brd);border-radius:18px;
-  padding:44px 36px;text-align:center;width:100%;
-  box-shadow:0 32px 80px rgba(0,0,0,.55);
-}
+.result-card{background:var(--surf);border:1px solid var(--brd);border-radius:18px;padding:44px 36px;text-align:center;width:100%;box-shadow:0 32px 80px rgba(0,0,0,.55)}
 .result-card h2{font-family:var(--serif);font-size:23px;font-weight:500;margin-bottom:4px}
 .spinner{width:36px;height:36px;border:3px solid var(--brd2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:20px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 #final-msg{font-size:15px;font-weight:500;margin-top:12px;line-height:1.5}
 .result-note{font-size:13px;color:var(--txt-m);margin-top:22px;line-height:1.65}
-
-@media(max-width:480px){
-  .login-card{padding:30px 22px 26px}
-  .top-bar{padding:11px 14px}
-  .q-card{padding:18px 16px 15px}
-}
+@media(max-width:480px){.login-card{padding:30px 22px 26px}.top-bar{padding:11px 14px}.q-card{padding:18px 16px 15px}}
 </style>
 </head>
 <body oncopy="return false" oncut="return false" onpaste="return false" oncontextmenu="return false">
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
-
 <div class="wrap">
 
-<!-- ═══ LOGIN ═══ -->
+<!-- LOGIN -->
 <div id="login-section">
   <div class="brand">
     <svg class="brand-logo" viewBox="0 0 68 68" fill="none">
       <circle cx="34" cy="34" r="33" stroke="rgba(201,168,76,0.18)" stroke-width="1"/>
       <circle cx="34" cy="34" r="26" stroke="rgba(201,168,76,0.07)" stroke-width="1"/>
-      <!-- lotus petals -->
       <path d="M34 52C34 52 18 40 18 26.5C18 20 24.5 16 34 23C43.5 16 50 20 50 26.5C50 40 34 52 34 52Z" stroke="#c9a84c" stroke-width="1.1" fill="rgba(201,168,76,0.05)" stroke-linejoin="round"/>
       <path d="M34 52C34 52 22 38 25.5 25C27 20 31.5 18 34 23" stroke="#c9a84c" stroke-width="0.8" fill="none" opacity=".55"/>
       <path d="M34 52C34 52 46 38 42.5 25C41 20 36.5 18 34 23" stroke="#c9a84c" stroke-width="0.8" fill="none" opacity=".55"/>
-      <path d="M34 52C34 52 13 37 18 23" stroke="#c9a84c" stroke-width="0.6" fill="none" opacity=".3"/>
-      <path d="M34 52C34 52 55 37 50 23" stroke="#c9a84c" stroke-width="0.6" fill="none" opacity=".3"/>
       <circle cx="34" cy="22.5" r="2.8" fill="#c9a84c" opacity=".75"/>
       <line x1="34" y1="52" x2="34" y2="58" stroke="#c9a84c" stroke-width="1" opacity=".4" stroke-linecap="round"/>
     </svg>
@@ -194,18 +102,17 @@ body{
     <div class="brand-sub">Kediri &middot; Employee Evaluation System</div>
     <div class="divider-brand"></div>
   </div>
-
   <div class="login-card">
     <h2>Selamat Datang</h2>
     <p class="sub">Masukkan NIK Anda untuk memulai atau melanjutkan sesi ujian kompetensi karyawan.</p>
     <label class="f-label" for="nik">NIK Karyawan</label>
-    <input type="text" id="nik" class="f-input" placeholder="Contoh: 2021001" autocomplete="off">
+    <input type="text" id="nik" class="f-input" placeholder="Contoh: 2021001" autocomplete="off" onkeydown="if(event.key==='Enter')loginAPI()">
     <button id="btn-login" class="btn-gold" onclick="loginAPI()">Mulai Ujian &rarr;</button>
     <div id="login-msg"></div>
   </div>
 </div>
 
-<!-- ═══ QUIZ ═══ -->
+<!-- QUIZ -->
 <div id="quiz-section">
   <div class="top-bar">
     <div class="timer-inner">
@@ -216,24 +123,21 @@ body{
     </div>
     <div id="top-name-display" class="user-badge">NAMA KARYAWAN</div>
   </div>
-
   <div class="prog-row">
     <span id="prog-text">0 dari 0 terjawab</span>
     <span id="prog-pct">0%</span>
   </div>
   <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
-
   <div class="notice">
     <strong>Perhatian:</strong> Sistem pengawasan aktif. Anda tidak dapat menyalin teks. Jawaban tersimpan otomatis setiap perubahan. Ujian dikumpulkan otomatis saat waktu habis.
   </div>
-
   <form id="quiz-form">
     <div id="questions-container"></div>
     <button type="button" id="btn-submit" class="btn-submit" onclick="submitTest()">Kumpulkan Jawaban</button>
   </form>
 </div>
 
-<!-- ═══ RESULT ═══ -->
+<!-- RESULT -->
 <div id="result-section">
   <div class="brand" style="margin-bottom:24px">
     <svg class="brand-logo" viewBox="0 0 68 68" fill="none">
@@ -246,14 +150,13 @@ body{
   <div class="result-card">
     <h2>Ujian Selesai</h2>
     <div class="spinner" id="result-spinner"></div>
-    <p id="progress-msg" style="font-size:13.5px;color:var(--txt-m);margin-top:4px">Mengirim data ke server database...</p>
+    <p id="progress-msg" style="font-size:13.5px;color:var(--txt-m);margin-top:4px">Mengirim data ke server...</p>
     <p id="final-msg"></p>
     <p class="result-note">Terima kasih telah mengikuti ujian kompetensi.<br>Silakan tutup halaman ini dan kembali bertugas.</p>
   </div>
 </div>
 
-</div><!-- /wrap -->
-
+</div>
 <script>
 document.addEventListener('keydown',function(e){
   if(e.key==='F12'||e.keyCode===123)e.preventDefault();
@@ -262,7 +165,7 @@ document.addEventListener('keydown',function(e){
 });
 
 const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbzUUVMN8pQgeePiB42W5gtyF6lw99Fg3J9Jo59PltBWcg-fybwsh5d7BUyrvyc4Ejz8/exec';
-let timerInterval,waktuDetik=45*60,userData=null,currentSoal=[];
+let timerInterval, waktuDetik=45*60, userData=null, currentSoal=[];
 
 document.addEventListener('DOMContentLoaded',function(){
   const s=localStorage.getItem('last_active_nik');
@@ -293,10 +196,15 @@ async function loginAPI(){
       }else{
         userData=data.user;currentSoal=data.soal;
         if(!currentSoal.length){showMsg('Soal belum tersedia untuk departemen Anda.','error');btn.disabled=false;return;}
-        simpanSesiLokal();renderSoal();
+        // Catat waktu mulai ujian (baru, bukan resume)
+        localStorage.setItem('ujian_waktu_mulai_'+nik, new Date().toISOString());
+        simpanSesiLokal();
+        renderSoal();
       }
     }else{
-      localStorage.removeItem('ujian_session_'+nik);localStorage.removeItem('ujian_jawaban_'+nik);
+      localStorage.removeItem('ujian_session_'+nik);
+      localStorage.removeItem('ujian_jawaban_'+nik);
+      localStorage.removeItem('ujian_waktu_mulai_'+nik);
       showMsg(data.message,'error');btn.disabled=false;
     }
   }catch(err){
@@ -313,6 +221,7 @@ function renderSoal(){
   const cont=document.getElementById('questions-container');cont.innerHTML='';
   const saved=JSON.parse(localStorage.getItem('ujian_jawaban_'+userData.nik))||{};
   currentSoal.forEach((item,i)=>{
+    const isCrit=item.is_critical||false;
     const opts=['A','B','C','D'].map(k=>`
       <label class="opt">
         <input type="radio" name="${item.id}" value="${k}" onchange="simpanJawabanLokal();updateProg()" ${saved[item.id]===k?'checked':''}>
@@ -321,8 +230,8 @@ function renderSoal(){
         <span>${item.opsi[k]}</span>
       </label>`).join('');
     const isAnswered=saved[item.id]?'answered':'';
-    cont.innerHTML+=`<div class="q-card ${isAnswered}" id="qc-${i}">
-      <div class="q-tag">Soal ${i+1} &middot; ${item.kategori}</div>
+    cont.innerHTML+=`<div class="q-card ${isAnswered}${isCrit?' critical-q':''}" id="qc-${i}">
+      <div class="q-tag${isCrit?' crit':''}">Soal ${i+1} &middot; ${item.kategori}${isCrit?' &middot; &#9888; Kritis':''}</div>
       <div class="q-text">${item.pertanyaan}</div>
       <div class="opts">${opts}</div>
     </div>`;
@@ -370,11 +279,29 @@ async function submitTest(){
   clearInterval(timerInterval);
   const btn=document.getElementById('btn-submit');btn.disabled=true;btn.innerText='Mengirim...';
   const fd=new FormData(document.getElementById('quiz-form'));
-  const j={};for(let[k,v]of fd.entries())j[k]=v;
+  const jawabanKaryawan={};for(let[k,v]of fd.entries())jawabanKaryawan[k]=v;
+
+  // Hitung completion_rate: berapa % soal yang dijawab
+  const totalSoal=currentSoal.length;
+  const dijawab=Object.keys(jawabanKaryawan).length;
+  const completionRate=totalSoal>0?Math.round(dijawab/totalSoal*100):0;
+
+  // Ambil waktu_mulai dari localStorage
+  const waktuMulai=localStorage.getItem('ujian_waktu_mulai_'+userData.nik)||new Date().toISOString();
+
   document.getElementById('quiz-section').style.display='none';
-  const rs=document.getElementById('result-section');rs.style.display='flex';
+  document.getElementById('result-section').style.display='flex';
+
+  const payload={
+    action:'submitUjian',
+    nik:userData.nik,
+    jawaban:jawabanKaryawan,
+    waktu_mulai:waktuMulai,
+    completion_rate:completionRate
+  };
+
   try{
-    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'submitUjian',nik:userData.nik,jawaban:j})});
+    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
     const r=await res.json();
     document.getElementById('result-spinner').style.display='none';
     if(r.status==='success'){
@@ -383,6 +310,7 @@ async function submitTest(){
       document.getElementById('final-msg').style.color='#3dcc8a';
       localStorage.removeItem('ujian_session_'+userData.nik);
       localStorage.removeItem('ujian_jawaban_'+userData.nik);
+      localStorage.removeItem('ujian_waktu_mulai_'+userData.nik);
       localStorage.removeItem('last_active_nik');
     }else{
       document.getElementById('progress-msg').innerText='Terjadi kesalahan:';
