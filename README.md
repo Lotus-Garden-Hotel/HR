@@ -20,7 +20,7 @@ EAS - Hospitality Edition adalah platform ujian web-based yang dirancang khusus 
 
     Real-time Dashboard: Visualisasi performa antar departemen menggunakan Chart.js.
 
-    Weighted Scoring (30/70): Rumus penilaian profesional yang menitikberatkan pada keahlian teknis departemen (70%) dan pemahaman umum hotel (30%).
+    Weighted Scoring (50/50): Rumus penilaian profesional yang menitikberatkan pada keahlian teknis departemen (50%) dan pemahaman umum hotel (50%).
 
     Administrative Control: Fitur khusus bagi HR untuk me-reset akses karyawan tertentu agar dapat melakukan ujian ulang (Re-test).
 
