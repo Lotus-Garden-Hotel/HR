@@ -119,6 +119,81 @@ td{padding:11px 14px;font-size:12.5px;color:var(--txt);vertical-align:middle}
 .no-data{text-align:center;padding:40px 20px;color:var(--txt-m);font-size:13px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media print{.no-print{display:none!important}}
+/* ── BEST EMPLOYEE TAB ── */
+.be-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:28px}
+@media(max-width:700px){.be-hero{grid-template-columns:1fr}}
+.be-card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r2);padding:24px 20px 20px;position:relative;overflow:hidden;transition:border-color .25s,transform .2s;text-align:center}
+.be-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.12)}
+.be-card.rank-1{border-color:rgba(212,168,75,.35);background:linear-gradient(145deg,#0f1520,#141a0e)}
+.be-card.rank-2{border-color:rgba(180,180,180,.25)}
+.be-card.rank-3{border-color:rgba(180,120,60,.25)}
+.be-rank-badge{position:absolute;top:14px;left:14px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:11px;font-weight:700}
+.be-rank-badge.r1{background:rgba(212,168,75,.2);color:#d4a84b;border:1px solid rgba(212,168,75,.4)}
+.be-rank-badge.r2{background:rgba(180,180,180,.15);color:#b4b4b4;border:1px solid rgba(180,180,180,.3)}
+.be-rank-badge.r3{background:rgba(180,120,60,.15);color:#b4783c;border:1px solid rgba(180,120,60,.3)}
+.be-crown{position:absolute;top:12px;right:14px;font-size:16px;opacity:.85}
+.be-avatar{width:60px;height:60px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--head);font-size:20px;font-weight:700;margin:10px auto 12px;border:2px solid}
+.be-card.rank-1 .be-avatar{background:rgba(212,168,75,.15);color:#d4a84b;border-color:rgba(212,168,75,.35)}
+.be-card.rank-2 .be-avatar{background:rgba(180,180,180,.1);color:#b4b4b4;border-color:rgba(180,180,180,.25)}
+.be-card.rank-3 .be-avatar{background:rgba(180,120,60,.1);color:#b4783c;border-color:rgba(180,120,60,.25)}
+.be-nama{font-family:var(--head);font-size:14px;font-weight:600;color:var(--txt);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.be-dept{font-size:11px;color:var(--txt-m);margin-bottom:14px}
+.be-nka-wrap{display:inline-flex;align-items:baseline;gap:5px;margin-bottom:6px}
+.be-nka-val{font-family:var(--head);font-size:32px;font-weight:700;line-height:1}
+.be-grade{font-family:var(--head);font-size:14px;font-weight:700;padding:3px 9px;border-radius:6px}
+.bg-a{background:rgba(29,158,117,.15);color:#1D9E75}
+.bg-b{background:rgba(94,159,212,.15);color:#5e9fd4}
+.bg-c{background:rgba(240,176,85,.15);color:#f0b055}
+.bg-d{background:rgba(240,107,107,.15);color:#f06b6b}
+.be-ujian-row{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11.5px;color:var(--txt-m);margin-bottom:12px}
+.be-ujian-val{font-family:var(--head);font-size:13px;font-weight:600;color:var(--teal)}
+.be-rek{font-size:11px;color:var(--txt-m);background:var(--surf2);border-radius:7px;padding:7px 10px;line-height:1.5;text-align:left;border:1px solid var(--brd2)}
+.be-rek strong{color:var(--teal);font-weight:600}
+.be-divider{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.be-divider-line{flex:1;height:1px;background:var(--brd)}
+.be-divider-txt{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-m)}
+.be-empty{text-align:center;padding:60px 20px;color:var(--txt-m);font-size:13px;line-height:1.7}
+.be-note{font-size:11.5px;color:var(--txt-m);background:var(--surf2);border:1px solid var(--brd);border-radius:8px;padding:11px 14px;margin-bottom:18px;line-height:1.6}
+
+/* ── TABS ── */
+.tab-nav{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--brd);padding-bottom:0}
+.tab-btn{padding:10px 18px;font-family:var(--head);font-size:12.5px;font-weight:600;letter-spacing:.04em;color:var(--txt-m);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s,border-color .2s}
+.tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
+.tab-btn:hover:not(.active){color:var(--txt)}
+.tab-pane{display:none}.tab-pane.active{display:block}
+/* ── PENILAIAN SECTION ── */
+.pn-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:900px){.pn-kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:480px){.pn-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.grade-a{--kpi-color:#1D9E75;--kpi-bg:rgba(29,158,117,.12)}
+.grade-b{--kpi-color:#5e9fd4;--kpi-bg:rgba(94,159,212,.12)}
+.grade-c{--kpi-color:#f0b055;--kpi-bg:rgba(240,176,85,.12)}
+.grade-d{--kpi-color:#f06b6b;--kpi-bg:var(--red-dim)}
+.sync-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.sync-bar-left{display:flex;align-items:center;gap:10px}
+.btn-sync{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid rgba(18,184,166,.3);background:var(--teal-dim);color:var(--teal);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-sync:hover{background:rgba(18,184,166,.18);border-color:rgba(18,184,166,.6)}
+.btn-sync:disabled{opacity:.4;cursor:not-allowed}
+.btn-sync svg{width:13px;height:13px}
+.sync-note{font-size:11.5px;color:var(--txt-m)}
+.pn-table-wrap{overflow-x:auto}
+.pn-table{width:100%;border-collapse:collapse;min-width:900px}
+.pn-table th{padding:10px 12px;font-family:var(--head);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-m);border-bottom:1px solid var(--brd);white-space:nowrap;background:var(--surf2)}
+.pn-table td{padding:11px 12px;font-size:12.5px;color:var(--txt);border-bottom:1px solid var(--brd2)}
+.pn-table tbody tr:hover{background:var(--surf2)}
+.pn-table tbody tr:last-child td{border-bottom:none}
+.bar-wrap{display:flex;align-items:center;gap:6px}
+.bar-track{flex:1;max-width:60px;height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px}
+.auto-pill{font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(18,184,166,.15);color:var(--teal);letter-spacing:.05em;margin-left:3px}
+.manual-pill{font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;background:rgba(240,176,85,.15);color:var(--amber);letter-spacing:.05em;margin-left:3px}
+.grade-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-family:var(--head);font-size:13px;font-weight:700}
+.gb-a{background:rgba(29,158,117,.15);color:#1D9E75}
+.gb-b{background:rgba(94,159,212,.15);color:#5e9fd4}
+.gb-c{background:rgba(240,176,85,.15);color:#f0b055}
+.gb-d{background:rgba(240,107,107,.15);color:#f06b6b}
+.rekap-note{font-size:11.5px;color:var(--txt-m);padding:12px 16px;background:var(--surf2);border:1px solid var(--brd);border-radius:8px;margin-bottom:14px;line-height:1.6}
+
 </style>
 </head>
 <body>
@@ -164,6 +239,14 @@ td{padding:11px 14px;font-size:12.5px;color:var(--txt);vertical-align:middle}
     </div>
   </div>
 
+  <!-- TAB NAVIGATION -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('ujian')">Hasil Ujian &amp; Analytics</button>
+    <button class="tab-btn" onclick="switchTab('penilaian')">Penilaian Kinerja (NKA)</button>
+    <button class="tab-btn" onclick="switchTab('bestemployee')">🏆 Top 3 Best Employee</button>
+  </div>
+
+  <div class="tab-pane active" id="ujian-pane">
   <div class="kpi-grid">
     <div class="kpi k-teal">
       <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
@@ -236,7 +319,110 @@ td{padding:11px 14px;font-size:12.5px;color:var(--txt);vertical-align:middle}
       </table>
     </div>
   </div>
-</div>
+  </div><!-- /#ujian-pane -->
+
+  <!-- ═══ PENILAIAN KINERJA PANE ═══ -->
+  <div class="tab-pane" id="penilaian-pane">
+    <div class="rekap-note">
+      <strong style="color:var(--teal)">Catatan:</strong> Data diambil dari sheet <code style="font-size:10.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px">rekap_penilaian</code> di Google Sheets. Pastikan HOD sudah mengisi skor di spreadsheet sebelum refresh. Kolom <strong>Nilai Ujian</strong> bisa di-sync otomatis dari Portal Ujian menggunakan tombol di bawah.
+    </div>
+
+    <!-- KPI Cards penilaian -->
+    <div class="pn-kpi-grid">
+      <div class="kpi k-teal" style="grid-column:span 2">
+        <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <div class="kpi-val" id="pn-k-total">—</div>
+        <div class="kpi-lbl">Total Dinilai</div>
+      </div>
+      <div class="kpi k-amber">
+        <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div class="kpi-val" id="pn-k-avg">—</div>
+        <div class="kpi-lbl">Rata-rata NKA</div>
+      </div>
+      <div class="kpi grade-a">
+        <div class="kpi-icon" style="background:rgba(29,158,117,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="kpi-val" id="pn-k-a">—</div>
+        <div class="kpi-lbl">Grade A ≥ 90</div>
+      </div>
+      <div class="kpi grade-b">
+        <div class="kpi-icon" style="background:rgba(94,159,212,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="#5e9fd4" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="kpi-val" id="pn-k-b">—</div>
+        <div class="kpi-lbl">Grade B ≥ 75</div>
+      </div>
+      <div class="kpi grade-c">
+        <div class="kpi-icon" style="background:rgba(240,176,85,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="#f0b055" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="kpi-val" id="pn-k-c">—</div>
+        <div class="kpi-lbl">Grade C &lt; 75</div>
+      </div>
+      <div class="kpi grade-d">
+        <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+        <div class="kpi-val" id="pn-k-d">—</div>
+        <div class="kpi-lbl">Grade D &lt; 60</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">NKA vs Nilai Ujian per Departemen</div>
+          <span class="card-badge badge-teal">Perbandingan</span>
+        </div>
+        <div class="chart-wrap"><canvas id="pnDeptChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Distribusi Grade Karyawan</div>
+          <span class="card-badge badge-teal">Semua Dept</span>
+        </div>
+        <div class="chart-wrap"><canvas id="pnGradeChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-head">
+        <div class="th-left">
+          <span class="table-title">Detail Penilaian Per Karyawan</span>
+        </div>
+        <div class="no-print" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button class="btn-sync" id="btn-sync" onclick="syncNilaiUjian()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+            Sync Nilai Ujian → Sheet
+          </button>
+          <div class="search-wrap">
+            <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="search-input" id="pn-search" placeholder="Cari nama / NIK / dept..." oninput="filterPenilaian()">
+          </div>
+        </div>
+      </div>
+      <div class="pn-table-wrap">
+        <table class="pn-table">
+          <thead><tr>
+            <th>NIK</th><th>Nama</th><th>Dept</th>
+            <th>KPI<br><span style="font-weight:400;opacity:.7">40%</span></th>
+            <th>Disiplin<br><span style="font-weight:400;opacity:.7">20%</span></th>
+            <th>Ujian<br><span style="font-weight:400;opacity:.7">kompetensi</span></th>
+            <th>Sikap<br><span style="font-weight:400;opacity:.7">20%</span></th>
+            <th>NKA</th><th>Grade</th><th>Status</th><th>Rekomendasi</th>
+          </tr></thead>
+          <tbody id="pn-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /#penilaian-pane -->
+
+
+  <!-- ═══ BEST EMPLOYEE PANE ═══ -->
+  <div class="tab-pane" id="bestemployee-pane">
+    <div class="be-note">
+      <strong style="color:var(--teal)">Metodologi:</strong> Peringkat berdasarkan <strong>NKA</strong> (Nilai Kinerja Akhir) sebagai kriteria utama, dan <strong>Nilai Ujian</strong> sebagai tiebreaker jika NKA sama. Data diambil dari penilaian HOD yang sudah tersimpan.
+    </div>
+    <div id="be-hero-wrap">
+      <div class="be-empty">Memuat data...</div>
+    </div>
+  </div><!-- /#bestemployee-pane -->
+</div><!-- /#main-content -->
 
 <script>
 const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbzUUVMN8pQgeePiB42W5gtyF6lw99Fg3J9Jo59PltBWcg-fybwsh5d7BUyrvyc4Ejz8/exec';
@@ -245,6 +431,147 @@ let currentPW='', lbChart=null, sgChart=null, allRows=[];
 Chart.defaults.color='#5e7382';
 Chart.defaults.borderColor='rgba(255,255,255,0.05)';
 Chart.defaults.font.family="'DM Sans',sans-serif";
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',
+    (tab==='ujian'&&i===0)||(tab==='penilaian'&&i===1)||(tab==='bestemployee'&&i===2)));
+  document.getElementById('ujian-pane').classList.toggle('active', tab==='ujian');
+  document.getElementById('penilaian-pane').classList.toggle('active', tab==='penilaian');
+  document.getElementById('bestemployee-pane').classList.toggle('active', tab==='bestemployee');
+  if(tab==='penilaian' && !penilaianLoaded) loadPenilaian();
+  if(tab==='bestemployee' && !beLoaded) loadBestEmployee();
+}
+
+let penilaianLoaded=false, pnChart1=null, pnChart2=null, allPnRows=[];
+
+async function loadPenilaian(){
+  try{
+    const res=await fetch(`${APPS_SCRIPT_URL}?action=getPenilaian&pw=${encodeURIComponent(currentPW)}`);
+    const data=await res.json();
+    if(data.status==='success'){
+      penilaianLoaded=true;
+      renderPenilaianKPI(data.summary);
+      renderPenilaianTable(data.records);
+      renderPenilaianCharts(data.summary);
+    }else{
+      document.getElementById('pn-table-body').innerHTML=
+        '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--txt-m)">'+data.message+'</td></tr>';
+    }
+  }catch(e){
+    document.getElementById('pn-table-body').innerHTML=
+      '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--red)">Koneksi gagal: '+e.message+'</td></tr>';
+  }
+}
+
+function renderPenilaianKPI(s){
+  document.getElementById('pn-k-total').innerText=s.total;
+  document.getElementById('pn-k-avg').innerText=s.avgNKA;
+  document.getElementById('pn-k-a').innerText=s.gradeCount.A;
+  document.getElementById('pn-k-b').innerText=s.gradeCount.B;
+  document.getElementById('pn-k-c').innerText=s.gradeCount.C;
+  document.getElementById('pn-k-d').innerText=s.gradeCount.D;
+}
+
+function renderPenilaianTable(records){
+  allPnRows=records;
+  buildPenilaianTable(records);
+}
+
+function buildPenilaianTable(rows){
+  const tbody=document.getElementById('pn-table-body');
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="11"><div class="no-data" style="padding:32px">Belum ada data penilaian — pastikan HOD sudah mengisi sheet rekap_penilaian.</div></td></tr>';
+    return;
+  }
+  const scoreBar=(v,color)=>`<div class="bar-wrap"><span style="font-size:12px;font-weight:600;color:${color};min-width:28px">${v}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(2,v)}%;background:${color}"></div></div></div>`;
+  const gradeCls={A:'gb-a',B:'gb-b',C:'gb-c',D:'gb-d'};
+  const scoreColor=v=>v>=75?'#38d4a0':v>=60?'#f0b055':'#f06b6b';
+  tbody.innerHTML=rows.map(r=>`<tr>
+    <td style="font-size:11.5px;font-weight:500;color:var(--teal)">${r.nik}</td>
+    <td style="font-weight:500">${r.nama}</td>
+    <td><span style="display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:500;background:rgba(94,159,212,.1);color:var(--blue)">${r.dept}</span></td>
+    <td>${scoreBar(r.kpi, scoreColor(r.kpi))}</td>
+    <td>${scoreBar(r.disiplin, scoreColor(r.disiplin))}</td>
+    <td><div class="bar-wrap"><span style="font-size:12px;font-weight:600;color:${scoreColor(r.nilai_ujian)};min-width:28px">${r.nilai_ujian||'—'}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(2,r.nilai_ujian||0)}%;background:${scoreColor(r.nilai_ujian||0)}"></div></div><span class="${r.ujian_sumber==='auto'?'auto-pill':'manual-pill'}">${r.ujian_sumber==='auto'?'AUTO':'manual'}</span></div></td>
+    <td>${scoreBar(r.sikap, scoreColor(r.sikap))}</td>
+    <td><span style="font-family:var(--head);font-size:15px;font-weight:700;color:${scoreColor(r.nka)}">${r.nka}</span></td>
+    <td><span class="grade-badge ${gradeCls[r.grade]||'gb-d'}">${r.grade}</span></td>
+    <td style="font-size:11.5px;color:${scoreColor(r.nka)};font-weight:500">${r.status}</td>
+    <td style="font-size:11.5px;color:var(--txt-m)">${r.rekomendasi}</td>
+  </tr>`).join('');
+}
+
+function filterPenilaian(){
+  const q=document.getElementById('pn-search').value.toLowerCase();
+  if(!q){buildPenilaianTable(allPnRows);return;}
+  buildPenilaianTable(allPnRows.filter(r=>
+    r.nik.toLowerCase().includes(q)||r.nama.toLowerCase().includes(q)||r.dept.toLowerCase().includes(q)
+  ));
+}
+
+function renderPenilaianCharts(s){
+  // Chart 1: NKA vs Ujian per Dept
+  const ctx1=document.getElementById('pnDeptChart').getContext('2d');
+  if(pnChart1)pnChart1.destroy();
+  const tooltipCfg={backgroundColor:'#141d2b',borderColor:'rgba(255,255,255,.08)',borderWidth:1,titleColor:'#dce8f0',bodyColor:'#5e7382',cornerRadius:8,padding:10};
+  pnChart1=new Chart(ctx1,{
+    type:'bar',
+    data:{
+      labels:s.deptChart.labels,
+      datasets:[
+        {label:'NKA',data:s.deptChart.nka,backgroundColor:'rgba(18,184,166,.7)',borderRadius:5,borderSkipped:false},
+        {label:'Nilai Ujian',data:s.deptChart.ujian,backgroundColor:'rgba(94,159,212,.55)',borderRadius:5,borderSkipped:false}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#5e7382',font:{size:11}}},tooltip:{...tooltipCfg}},
+      scales:{
+        y:{beginAtZero:true,max:100,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5e7382',font:{size:11}}},
+        x:{grid:{display:false},ticks:{color:'#5e7382',font:{size:11}}}
+      }
+    }
+  });
+
+  // Chart 2: Grade distribution doughnut
+  const ctx2=document.getElementById('pnGradeChart').getContext('2d');
+  if(pnChart2)pnChart2.destroy();
+  const gc=s.gradeCount;
+  pnChart2=new Chart(ctx2,{
+    type:'doughnut',
+    data:{
+      labels:['Grade A (≥90)','Grade B (≥75)','Grade C (≥60)','Grade D (<60)'],
+      datasets:[{
+        data:[gc.A,gc.B,gc.C,gc.D],
+        backgroundColor:['rgba(29,158,117,.8)','rgba(94,159,212,.8)','rgba(240,176,85,.8)','rgba(240,107,107,.8)'],
+        borderWidth:0,
+        hoverOffset:4
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      cutout:'62%',
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#5e7382',font:{size:11},padding:14,boxWidth:10}},
+        tooltip:{...tooltipCfg,callbacks:{label:ctx=>ctx.label+': '+ctx.raw+' orang'}}
+      }
+    }
+  });
+}
+
+async function syncNilaiUjian(){
+  const btn=document.getElementById('btn-sync');
+  btn.disabled=true;
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="animation:spin .7s linear infinite;display:inline-block"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg> Sync...';
+  try{
+    const res=await fetch(`${APPS_SCRIPT_URL}?action=syncNilaiUjian&pw=${encodeURIComponent(currentPW)}`);
+    const r=await res.json();
+    alert(r.status==='success'?'✅ '+r.message:'❌ '+r.message);
+    if(r.status==='success'){penilaianLoaded=false;loadPenilaian();}
+  }catch(e){alert('❌ Koneksi gagal: '+e.message);}
+  btn.disabled=false;
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> Sync Nilai Ujian → Sheet';
+}
 
 async function unlockDashboard(){
   const pw=document.getElementById('admin-pw').value;
@@ -417,6 +744,113 @@ function renderSkillGap(sg){
       }
     }
   });
+}
+
+// ══════════════════════════════════════════
+// BEST EMPLOYEE
+// ══════════════════════════════════════════
+let beLoaded = false;
+
+async function loadBestEmployee() {
+  const wrap = document.getElementById('be-hero-wrap');
+  wrap.innerHTML = '<div class="be-empty"><div style="width:28px;height:28px;border:2.5px solid rgba(255,255,255,.06);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px"></div>Memuat data Top 3...</div>';
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getPenilaian&pw=${encodeURIComponent(currentPW)}`);
+    const data = await res.json();
+    if (data.status === 'success') {
+      beLoaded = true;
+      renderBestEmployee(data.records);
+      // Juga load penilaian tab agar sinkron
+      if (!penilaianLoaded) {
+        penilaianLoaded = true;
+        renderPenilaianKPI(data.summary);
+        renderPenilaianTable(data.records);
+        renderPenilaianCharts(data.summary);
+      }
+    } else {
+      wrap.innerHTML = '<div class="be-empty">❌ ' + data.message + '</div>';
+    }
+  } catch(e) {
+    wrap.innerHTML = '<div class="be-empty" style="color:var(--red)">Koneksi gagal: ' + e.message + '</div>';
+  }
+}
+
+function renderBestEmployee(records) {
+  const wrap = document.getElementById('be-hero-wrap');
+  if (!records || !records.length) {
+    wrap.innerHTML = '<div class="be-empty">Belum ada data penilaian yang tersimpan.<br>Pastikan HOD sudah menyimpan penilaian karyawan.</div>';
+    return;
+  }
+
+  // Sorting: NKA desc, nilai_ujian sebagai tiebreaker
+  const sorted = [...records].sort((a, b) => {
+    if (b.nka !== a.nka) return b.nka - a.nka;
+    return (b.nilai_ujian || 0) - (a.nilai_ujian || 0);
+  });
+
+  const top3 = sorted.slice(0, 3);
+  const rankConfig = [
+    { cls: 'rank-1', badgeCls: 'r1', label: '1', crown: '👑' },
+    { cls: 'rank-2', badgeCls: 'r2', label: '2', crown: '🥈' },
+    { cls: 'rank-3', badgeCls: 'r3', label: '3', crown: '🥉' },
+  ];
+  const gradeCls = { A: 'bg-a', B: 'bg-b', C: 'bg-c', D: 'bg-d' };
+  const nkaColor = v => v >= 90 ? '#1D9E75' : v >= 75 ? '#5e9fd4' : v >= 60 ? '#f0b055' : '#f06b6b';
+
+  const cards = top3.map((r, idx) => {
+    const rc = rankConfig[idx];
+    const initials = r.nama.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    const gc = gradeCls[r.grade] || 'bg-d';
+    const rekLabel = r.rekomendasi || '—';
+    return `
+      <div class="be-card ${rc.cls}">
+        <div class="be-rank-badge ${rc.badgeCls}">${rc.label}</div>
+        <div class="be-crown">${rc.crown}</div>
+        <div class="be-avatar">${initials}</div>
+        <div class="be-nama" title="${r.nama}">${r.nama}</div>
+        <div class="be-dept">${r.dept}</div>
+        <div class="be-nka-wrap">
+          <span class="be-nka-val" style="color:${nkaColor(r.nka)}">${r.nka}</span>
+          <span class="be-grade ${gc}">${r.grade}</span>
+        </div>
+        <div class="be-ujian-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Nilai Ujian: <span class="be-ujian-val">${r.nilai_ujian > 0 ? r.nilai_ujian : '—'}</span>
+        </div>
+        <div class="be-rek"><strong>Rekomendasi:</strong> ${rekLabel}</div>
+      </div>`;
+  }).join('');
+
+  // Runner-up section (rank 4+)
+  let runnerUp = '';
+  if (sorted.length > 3) {
+    const rest = sorted.slice(3);
+    const rows = rest.map((r, i) => {
+      const gc = gradeCls[r.grade] || 'bg-d';
+      return `<tr>
+        <td style="padding:10px 14px;font-size:12.5px;color:var(--txt-m);font-weight:600">#${i + 4}</td>
+        <td style="padding:10px 14px;font-size:13px;font-weight:500">${r.nama}</td>
+        <td style="padding:10px 14px"><span style="padding:2px 8px;border-radius:5px;font-size:11px;background:rgba(94,159,212,.1);color:var(--blue)">${r.dept}</span></td>
+        <td style="padding:10px 14px;font-family:var(--head);font-size:15px;font-weight:700;color:${nkaColor(r.nka)}">${r.nka}</td>
+        <td style="padding:10px 14px"><span class="be-grade ${gc}" style="font-size:11px;padding:2px 8px">${r.grade}</span></td>
+        <td style="padding:10px 14px;font-size:12px;color:var(--teal)">${r.nilai_ujian > 0 ? r.nilai_ujian : '—'}</td>
+      </tr>`;
+    }).join('');
+    runnerUp = `
+      <div class="be-divider"><div class="be-divider-line"></div><div class="be-divider-txt">Peringkat Selanjutnya</div><div class="be-divider-line"></div></div>
+      <div class="table-card">
+        <div style="overflow-x:auto">
+          <table style="min-width:500px">
+            <thead><tr>
+              <th>Rank</th><th>Nama</th><th>Dept</th><th>NKA</th><th>Grade</th><th>Nilai Ujian</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  wrap.innerHTML = `<div class="be-hero">${cards}</div>${runnerUp}`;
 }
 </script>
 </body>
