@@ -229,7 +229,7 @@ td{padding:11px 14px;font-size:12.5px;color:var(--txt);vertical-align:middle}
       </div>
     </div>
     <div class="dh-actions no-print">
-      <button class="btn-outline" onclick="unlockDashboard()">
+      <button class="btn-outline" id="btn-refresh" onclick="refreshDashboard()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
         Refresh
       </button>
@@ -420,7 +420,7 @@ td{padding:11px 14px;font-size:12.5px;color:var(--txt);vertical-align:middle}
       <strong style="color:var(--teal)">Metodologi:</strong> Peringkat berdasarkan <strong>NKA</strong> (Nilai Kinerja Akhir) sebagai kriteria utama, dan <strong>Nilai Ujian</strong> sebagai tiebreaker jika NKA sama. Data diambil dari penilaian HOD yang sudah tersimpan.
     </div>
     <div id="be-hero-wrap">
-      <div class="be-empty">Memuat data...</div>
+      <div class="be-empty">Klik tab ini untuk memuat data Top 3 Best Employee.</div>
     </div>
   </div><!-- /#bestemployee-pane -->
 </div><!-- /#main-content -->
@@ -444,23 +444,37 @@ function switchTab(tab){
 }
 
 let penilaianLoaded=false, pnChart1=null, pnChart2=null, allPnRows=[];
+let cachedPenilaianData=null; // FIX: shared cache - cegah double fetch ke getPenilaian
+
+async function fetchPenilaianData(){
+  // FIX: satu fetch untuk Penilaian & Best Employee — shared cache
+  if(cachedPenilaianData) return cachedPenilaianData;
+  // Ambil filter semester aktif dari selector (jika ada), fallback kosong = semua
+  const sem=document.getElementById('pn-sem-filter')?document.getElementById('pn-sem-filter').value:'';
+  const thn=document.getElementById('pn-tahun-filter')?document.getElementById('pn-tahun-filter').value:'';
+  const params=`action=getPenilaian&pw=${encodeURIComponent(currentPW)}`
+    +(sem?`&semester=${sem}`:'')+( thn?`&tahun=${thn}`:'');
+  const res=await fetchWithTimeout(`${APPS_SCRIPT_URL}?${params}`);
+  const data=await res.json();
+  if(data.status==='success') cachedPenilaianData=data;
+  return data;
+}
 
 async function loadPenilaian(){
+  const tbody=document.getElementById('pn-table-body');
+  tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--txt-m)"><div style="width:22px;height:22px;border:2px solid rgba(255,255,255,.06);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px"></div>Memuat data penilaian...</td></tr>';
   try{
-    const res=await fetch(`${APPS_SCRIPT_URL}?action=getPenilaian&pw=${encodeURIComponent(currentPW)}`);
-    const data=await res.json();
+    const data=await fetchPenilaianData();
     if(data.status==='success'){
       penilaianLoaded=true;
       renderPenilaianKPI(data.summary);
       renderPenilaianTable(data.records);
       renderPenilaianCharts(data.summary);
     }else{
-      document.getElementById('pn-table-body').innerHTML=
-        '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--txt-m)">'+data.message+'</td></tr>';
+      tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--txt-m)">'+data.message+'</td></tr>';
     }
   }catch(e){
-    document.getElementById('pn-table-body').innerHTML=
-      '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--red)">Koneksi gagal: '+e.message+'</td></tr>';
+    tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--red)">'+e.message+'</td></tr>';
   }
 }
 
@@ -565,21 +579,56 @@ async function syncNilaiUjian(){
   btn.disabled=true;
   btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="animation:spin .7s linear infinite;display:inline-block"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg> Sync...';
   try{
-    const res=await fetch(`${APPS_SCRIPT_URL}?action=syncNilaiUjian&pw=${encodeURIComponent(currentPW)}`);
+    const res=await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=syncNilaiUjian&pw=${encodeURIComponent(currentPW)}`);
     const r=await res.json();
     alert(r.status==='success'?'✅ '+r.message:'❌ '+r.message);
-    if(r.status==='success'){penilaianLoaded=false;loadPenilaian();}
+    if(r.status==='success'){penilaianLoaded=false;beLoaded=false;cachedPenilaianData=null;loadPenilaian();}
   }catch(e){alert('❌ Koneksi gagal: '+e.message);}
   btn.disabled=false;
   btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> Sync Nilai Ujian → Sheet';
 }
 
+// FIX: fetchWithTimeout — abort jika GAS tidak respond dalam 25 detik
+async function fetchWithTimeout(url, opts={}, ms=25000){
+  const ctrl=new AbortController();
+  const tid=setTimeout(()=>ctrl.abort(),ms);
+  try{
+    const r=await fetch(url,{...opts,signal:ctrl.signal});
+    clearTimeout(tid);return r;
+  }catch(e){clearTimeout(tid);throw e.name==='AbortError'?new Error('Server tidak merespons (timeout 25s). Coba lagi.'):e;}
+}
+
+// FIX: refreshDashboard — reset semua tab flags sebelum reload
+function refreshDashboard(){
+  const btn=document.getElementById('btn-refresh');
+  btn.disabled=true;
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;animation:spin .7s linear infinite;display:inline-block"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> Memuat...';
+  // Reset semua cache & flags
+  penilaianLoaded=false;
+  beLoaded=false;
+  cachedPenilaianData=null;
+  // Deteksi tab aktif sebelum reload
+  const activeTab=document.querySelector('.tab-btn.active');
+  const tabIdx=activeTab?[...document.querySelectorAll('.tab-btn')].indexOf(activeTab):0;
+  const tabMap=['ujian','penilaian','bestemployee'];
+  const currentTab=tabMap[tabIdx]||'ujian';
+  unlockDashboard().then(()=>{
+    // Reload tab yang sedang aktif agar data fresh tanpa harus pindah tab
+    if(currentTab==='penilaian'){loadPenilaian();}
+    else if(currentTab==='bestemployee'){loadBestEmployee();}
+  }).finally(()=>{
+    btn.disabled=false;
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg> Refresh';
+  });
+}
+
 async function unlockDashboard(){
-  const pw=document.getElementById('admin-pw').value;
+  const pw=document.getElementById('admin-pw').value||currentPW;
   const errEl=document.getElementById('lp-err');
   errEl.style.display='none';
   try{
-    const res=await fetch(`${APPS_SCRIPT_URL}?action=getAnalytics&pw=${encodeURIComponent(pw)}`);
+    // FIX: gunakan fetchWithTimeout agar tidak hang
+    const res=await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=getAnalytics&pw=${encodeURIComponent(pw)}`);
     const data=await res.json();
     if(data.status==='success'){
       currentPW=pw;
@@ -592,7 +641,7 @@ async function unlockDashboard(){
     }else{
       errEl.innerText=data.message||'Password salah.';errEl.style.display='block';
     }
-  }catch(e){errEl.innerText='Koneksi gagal. Periksa URL Apps Script.';errEl.style.display='block';}
+  }catch(e){errEl.innerText=e.message||'Koneksi gagal. Periksa URL Apps Script.';errEl.style.display='block';}
 }
 
 function renderKPI(individuals){
@@ -664,7 +713,7 @@ async function resetUser(btn,nik){
   btn.disabled=true;
   try{
     const url=APPS_SCRIPT_URL+'?action=resetUser&nik='+encodeURIComponent(nik)+'&pw='+encodeURIComponent(currentPW);
-    const res=await fetch(url);
+    const res=await fetchWithTimeout(url);
     if(!res.ok)throw new Error('HTTP '+res.status);
     const result=await res.json();
     if(result.status==='success'){alert('✅ '+result.message);unlockDashboard();}
@@ -756,12 +805,12 @@ async function loadBestEmployee() {
   const wrap = document.getElementById('be-hero-wrap');
   wrap.innerHTML = '<div class="be-empty"><div style="width:28px;height:28px;border:2.5px solid rgba(255,255,255,.06);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px"></div>Memuat data Top 3...</div>';
   try {
-    const res = await fetch(`${APPS_SCRIPT_URL}?action=getPenilaian&pw=${encodeURIComponent(currentPW)}`);
-    const data = await res.json();
+    // FIX: gunakan shared cache — tidak perlu fetch ulang jika penilaian sudah di-load
+    const data = await fetchPenilaianData();
     if (data.status === 'success') {
       beLoaded = true;
       renderBestEmployee(data.records);
-      // Juga load penilaian tab agar sinkron
+      // Sinkron ke tab penilaian tanpa fetch tambahan
       if (!penilaianLoaded) {
         penilaianLoaded = true;
         renderPenilaianKPI(data.summary);
@@ -772,7 +821,7 @@ async function loadBestEmployee() {
       wrap.innerHTML = '<div class="be-empty">❌ ' + data.message + '</div>';
     }
   } catch(e) {
-    wrap.innerHTML = '<div class="be-empty" style="color:var(--red)">Koneksi gagal: ' + e.message + '</div>';
+    wrap.innerHTML = '<div class="be-empty" style="color:var(--red)">' + e.message + '</div>';
   }
 }
 

@@ -241,15 +241,17 @@ function renderSoal(){
 }
 
 function updateProg(){
+  // FIX PERF: satu querySelectorAll, bukan N kali querySelector per soal
+  const checked=new Set([...document.querySelectorAll('#quiz-form input[type="radio"]:checked')].map(r=>r.name));
   const total=currentSoal.length;
-  const done=currentSoal.filter(it=>document.querySelector(`input[name="${it.id}"]:checked`)).length;
+  const done=checked.size;
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('prog-text').innerText=`${done} dari ${total} terjawab`;
   document.getElementById('prog-pct').innerText=pct+'%';
   document.getElementById('prog-fill').style.width=pct+'%';
   currentSoal.forEach((it,i)=>{
     const el=document.getElementById('qc-'+i);
-    if(el)el.classList.toggle('answered',!!document.querySelector(`input[name="${it.id}"]:checked`));
+    if(el)el.classList.toggle('answered',checked.has(it.id));
   });
 }
 
@@ -267,12 +269,15 @@ function simpanJawabanLokal(){
 function mulaiTimer(){
   clearInterval(timerInterval);
   const disp=document.getElementById('timer-display');
+  let saveThrottle=0; // FIX PERF: throttle localStorage write dari tiap detik → tiap 15 detik
   timerInterval=setInterval(()=>{
-    waktuDetik--;simpanSesiLokal();
+    waktuDetik--;
+    saveThrottle++;
+    if(saveThrottle>=15){simpanSesiLokal();saveThrottle=0;} // tulis setiap 15 detik
     const m=Math.floor(waktuDetik/60),s=waktuDetik%60;
     disp.innerText=`${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
     if(waktuDetik<=300)disp.classList.add('urgent');
-    if(waktuDetik<=0){clearInterval(timerInterval);alert('Waktu Habis! Jawaban dikumpulkan otomatis.');submitTest();}
+    if(waktuDetik<=0){clearInterval(timerInterval);simpanSesiLokal();alert('Waktu Habis! Jawaban dikumpulkan otomatis.');submitTest();}
   },1000);
 }
 
@@ -302,7 +307,7 @@ async function submitTest(){
   };
 
   try{
-    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    const res=await fetchWithTimeout(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
     const r=await res.json();
     document.getElementById('result-spinner').style.display='none';
     if(r.status==='success'){

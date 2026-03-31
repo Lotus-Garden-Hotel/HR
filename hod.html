@@ -286,6 +286,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:10
 </div>
 
 <script>
+// FIX: timeout 25 detik — GAS cold start bisa lambat
+async function fetchWithTimeout(url,opts={},ms=25000){
+  const ctrl=new AbortController();
+  const tid=setTimeout(()=>ctrl.abort(),ms);
+  try{const r=await fetch(url,{...opts,signal:ctrl.signal});clearTimeout(tid);return r;}
+  catch(e){clearTimeout(tid);throw e.name==='AbortError'?new Error('Server tidak merespons (25s timeout). Coba lagi.'):e;}
+}
+
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzUUVMN8pQgeePiB42W5gtyF6lw99Fg3J9Jo59PltBWcg-fybwsh5d7BUyrvyc4Ejz8/exec';
 
 let SESSION = null; // {token, dept, nama_hod, username, role}
@@ -344,7 +352,7 @@ async function doLogin() {
   btn.disabled = true; btn.innerText = 'Memverifikasi...';
   errEl.style.display = 'none';
   try {
-    const res = await fetch(`${GAS_URL}?action=hodLogin&username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`);
+    const res = await fetchWithTimeout(`${GAS_URL}?action=hodLogin&username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`);
     const data = await res.json();
     if (data.status === 'success') {
       saveSession({token: data.token, dept: data.dept, nama_hod: data.nama_hod, username: data.username, role: data.role || 'hod'});
@@ -386,7 +394,7 @@ function showApp() {
 
 async function loadDeptList() {
   try {
-    const res = await fetch(`${GAS_URL}?action=getAllDept&token=${encodeURIComponent(SESSION.token)}`);
+    const res = await fetchWithTimeout(`${GAS_URL}?action=getAllDept&token=${encodeURIComponent(SESSION.token)}`);
     const data = await res.json();
     if (data.status === 'success') {
       const sel = document.getElementById('dept-select');
@@ -421,7 +429,7 @@ async function loadKaryawan() {
     const isAdmin = role === 'hr' || role === 'it';
     const selectedDept = isAdmin ? (document.getElementById('dept-select').value || '') : '';
     const url = `${GAS_URL}?action=getKaryawanHod&token=${encodeURIComponent(SESSION.token)}&semester=${currentSem}&tahun=${encodeURIComponent(tahun)}&dept=${encodeURIComponent(selectedDept)}`;
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
     let data;
@@ -458,7 +466,7 @@ function updateSummary(list) {
 function calcNKA(d, nilaiUjian) {
   const kpi  = avg3(d.kpi1||0, d.kpi2||0, d.kpi3||0);
   const dis  = avg3(d.dis1||0, d.dis2||0, d.dis3||0);
-  const komp = (parseFloat(nilaiUjian)||0 + parseFloat(d.komp2||0)) / 2;
+  const komp = ((parseFloat(nilaiUjian)||0) + (parseFloat(d.komp2)||0)) / 2;
   const skp  = avg3(d.skp1||0, d.skp2||0, d.skp3||0);
   return Math.round(kpi*0.4 + dis*0.2 + komp*0.2 + skp*0.2);
 }
@@ -491,7 +499,7 @@ function renderEmpList(list, sem, tahun) {
     }
 
     card.innerHTML = `
-      <div class="emp-head" onclick="toggleCard('${k.nik}')">
+      <div class="emp-head" onclick="toggleCard('${k.nik}',${idx})">
         <div class="emp-info">
           <div class="emp-initials">${initials}</div>
           <div>
@@ -511,9 +519,10 @@ function renderEmpList(list, sem, tahun) {
           <svg class="toggle-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
-      <div class="emp-body" id="body-${k.nik}">
-        ${buildForm(k, sem, tahun)}
+      <div class="emp-body" id="body-${k.nik}" data-loaded="false">
+        <div style="padding:20px;text-align:center;font-size:13px;color:var(--txt-m)">Membuka form...</div>
       </div>`;
+    // FIX PERF: attach listeners ONLY after form is actually rendered (lazy)
     container.appendChild(card);
   });
 
@@ -521,9 +530,20 @@ function renderEmpList(list, sem, tahun) {
   list.forEach(k => attachListeners(k));
 }
 
-function toggleCard(nik) {
+function toggleCard(nik, idx) {
   const card = document.getElementById('card-'+nik);
+  const body = document.getElementById('body-'+nik);
+  const willOpen = !card.classList.contains('open');
   card.classList.toggle('open');
+  // FIX PERF: lazy render form — inject hanya saat pertama dibuka
+  if (willOpen && body && body.dataset.loaded === 'false') {
+    const k = empListData[idx];
+    if (k) {
+      body.innerHTML = buildForm(k, empListSem, empListTahun);
+      body.dataset.loaded = 'true';
+      attachListeners(k);
+    }
+  }
 }
 
 // ── FORM BUILDER ───────────────────────────────────────────────────────────
@@ -696,7 +716,7 @@ async function savePenilaian(nik, sem, tahun) {
   };
 
   try {
-    const res = await fetch(GAS_URL, {
+    const res = await fetchWithTimeout(GAS_URL, {
       method: 'POST',
       headers: {'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify(payload)
@@ -743,7 +763,7 @@ async function openHistory(nik, nama) {
   document.getElementById('hist-content').innerHTML = '<div class="loading-state"><div class="spinner"></div>Memuat histori...</div>';
 
   try {
-    const res = await fetch(`${GAS_URL}?action=getHistoryPenilaian&token=${encodeURIComponent(SESSION.token)}&nik=${encodeURIComponent(nik)}`);
+    const res = await fetchWithTimeout(`${GAS_URL}?action=getHistoryPenilaian&token=${encodeURIComponent(SESSION.token)}&nik=${encodeURIComponent(nik)}`);
     const data = await res.json();
     if (data.status === 'success') {
       renderHistory(data.history, nama);
