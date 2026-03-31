@@ -394,7 +394,7 @@ function showApp() {
 
 async function loadDeptList() {
   try {
-    const res = await fetchWithTimeout(`${GAS_URL}?action=getAllDept&token=${encodeURIComponent(SESSION.token)}`);
+    const res = await fetch(`${GAS_URL}?action=getAllDept&token=${encodeURIComponent(SESSION.token)}`);
     const data = await res.json();
     if (data.status === 'success') {
       const sel = document.getElementById('dept-select');
@@ -429,7 +429,7 @@ async function loadKaryawan() {
     const isAdmin = role === 'hr' || role === 'it';
     const selectedDept = isAdmin ? (document.getElementById('dept-select').value || '') : '';
     const url = `${GAS_URL}?action=getKaryawanHod&token=${encodeURIComponent(SESSION.token)}&semester=${currentSem}&tahun=${encodeURIComponent(tahun)}&dept=${encodeURIComponent(selectedDept)}`;
-    const res = await fetchWithTimeout(url);
+    const res = await fetch(url);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
     let data;
@@ -499,7 +499,7 @@ function renderEmpList(list, sem, tahun) {
     }
 
     card.innerHTML = `
-      <div class="emp-head" onclick="toggleCard('${k.nik}',${idx})">
+      <div class="emp-head" onclick="toggleCard('${k.nik}')">
         <div class="emp-info">
           <div class="emp-initials">${initials}</div>
           <div>
@@ -526,22 +526,26 @@ function renderEmpList(list, sem, tahun) {
     container.appendChild(card);
   });
 
-  // Attach all input listeners after DOM insert
-  list.forEach(k => attachListeners(k));
+  // Listeners di-attach saat form di-lazy-render (di toggleCard)
+  // Tidak perlu attach di sini — form belum ada di DOM
 }
 
-function toggleCard(nik, idx) {
+function toggleCard(nik) {
   const card = document.getElementById('card-'+nik);
   const body = document.getElementById('body-'+nik);
   const willOpen = !card.classList.contains('open');
   card.classList.toggle('open');
-  // FIX PERF: lazy render form — inject hanya saat pertama dibuka
+  // Lazy render form — inject hanya saat pertama dibuka
   if (willOpen && body && body.dataset.loaded === 'false') {
-    const k = empListData[idx];
+    const k = empData.find(e => e.nik === nik);
+    const tahun = document.getElementById('inp-tahun').value.trim();
     if (k) {
-      body.innerHTML = buildForm(k, empListSem, empListTahun);
+      body.innerHTML = buildForm(k, currentSem, tahun);
       body.dataset.loaded = 'true';
       attachListeners(k);
+      recalcPreview(k.nik, k.nilai_ujian);
+    } else {
+      body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--red);font-size:13px">❌ Data karyawan tidak ditemukan.</div>';
     }
   }
 }
