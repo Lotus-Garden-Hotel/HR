@@ -792,7 +792,7 @@ function renderSkillGap(sg){
     data:{
       labels:filteredLabels,
       datasets:[{
-        label:'Jawaban Salah',data:filteredData,
+        label:'% Jawaban Salah',data:filteredData,
         backgroundColor:bgColors,
         borderRadius:4,borderSkipped:false,borderWidth:0
       }]
@@ -804,11 +804,15 @@ function renderSkillGap(sg){
         tooltip:{
           backgroundColor:'#141d2b',borderColor:'rgba(255,255,255,.08)',borderWidth:1,
           titleColor:'#dce8f0',bodyColor:'#5e7382',cornerRadius:8,padding:10,
-          callbacks:{label:c=>c.raw+' jawaban salah'}
+          callbacks:{label:c=>c.raw+'% jawaban salah (dari total soal dept)'}
         }
       },
       scales:{
-        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5e7382',font:{size:11}},beginAtZero:true},
+        x:{
+          grid:{color:'rgba(255,255,255,.04)'},
+          ticks:{color:'#5e7382',font:{size:11},callback:v=>v+'%'},
+          beginAtZero:true,max:100
+        },
         y:{grid:{display:false},ticks:{color:'#dce8f0',font:{size:11}}}
       }
     }
