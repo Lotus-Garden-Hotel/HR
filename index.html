@@ -165,6 +165,23 @@ document.addEventListener('keydown',function(e){
   if(e.ctrlKey&&(e.key==='c'||e.key==='C'||e.key==='v'||e.key==='V'||e.key==='x'||e.key==='X'))e.preventDefault();
 });
 
+// FIX BUG KRITIS: fetchWithTimeout — fungsi ini WAJIB ada sebelum submitTest dipanggil
+// Tanpa ini browser lempar ReferenceError → catch → "Koneksi terputus saat menyimpan"
+async function fetchWithTimeout(url, opts={}, ms=25000){
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, {...opts, signal: ctrl.signal});
+    clearTimeout(tid);
+    return r;
+  } catch(e) {
+    clearTimeout(tid);
+    throw e.name === 'AbortError'
+      ? new Error('Server tidak merespons (timeout 25s). Coba lagi.')
+      : e;
+  }
+}
+
 const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbzUUVMN8pQgeePiB42W5gtyF6lw99Fg3J9Jo59PltBWcg-fybwsh5d7BUyrvyc4Ejz8/exec';
 let timerInterval, waktuDetik=45*60, userData=null, currentSoal=[];
 
@@ -186,7 +203,7 @@ async function loginAPI(){
   const btn=document.getElementById('btn-login');btn.disabled=true;
   localStorage.setItem('last_active_nik',nik);
   try{
-    const res=await fetch(`${APPS_SCRIPT_URL}?action=getSoal&nik=${nik}`);
+    const res=await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=getSoal&nik=${nik}`);
     const data=await res.json();
     if(data.status==='success'){
       const saved=localStorage.getItem('ujian_session_'+nik);
@@ -285,7 +302,9 @@ async function submitTest(){
   clearInterval(timerInterval);
   const btn=document.getElementById('btn-submit');btn.disabled=true;btn.innerText='Mengirim...';
   const fd=new FormData(document.getElementById('quiz-form'));
-  const jawabanKaryawan={};for(let[k,v]of fd.entries())jawabanKaryawan[k]=v;
+  // FIX: deklarasi di scope luar agar catch block bisa akses untuk backup
+  let jawabanKaryawan={};for(let[k,v]of fd.entries())jawabanKaryawan[k]=v;
+  let waktuMulai='';
 
   // Hitung completion_rate: berapa % soal yang dijawab
   const totalSoal=currentSoal.length;
@@ -293,7 +312,7 @@ async function submitTest(){
   const completionRate=totalSoal>0?Math.round(dijawab/totalSoal*100):0;
 
   // Ambil waktu_mulai dari localStorage
-  const waktuMulai=localStorage.getItem('ujian_waktu_mulai_'+userData.nik)||new Date().toISOString();
+  waktuMulai=localStorage.getItem('ujian_waktu_mulai_'+userData.nik)||new Date().toISOString();
 
   document.getElementById('quiz-section').style.display='none';
   document.getElementById('result-section').style.display='flex';
@@ -326,8 +345,17 @@ async function submitTest(){
   }catch(e){
     document.getElementById('result-spinner').style.display='none';
     document.getElementById('progress-msg').style.display='none';
-    document.getElementById('final-msg').innerText='Koneksi terputus saat menyimpan. Segera lapor HR/IT.';
+    // Tampilkan pesan error spesifik (bukan hanya "koneksi terputus")
+    const errMsg = e.message && e.message.length < 120 ? e.message : 'Koneksi terputus saat menyimpan.';
+    document.getElementById('final-msg').innerText = errMsg + ' Segera lapor HR/IT dengan screenshot ini.';
     document.getElementById('final-msg').style.color='#e05c5c';
+    // Simpan jawaban ke localStorage sebagai backup agar tidak hilang
+    if(userData && jawabanKaryawan && Object.keys(jawabanKaryawan).length > 0){
+      localStorage.setItem('backup_jawaban_'+userData.nik, JSON.stringify({
+        nik: userData.nik, jawaban: jawabanKaryawan,
+        waktu_mulai: waktuMulai, ts: new Date().toISOString()
+      }));
+    }
   }
 }
 </script>
