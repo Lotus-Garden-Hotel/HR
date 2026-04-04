@@ -760,9 +760,28 @@ function renderSkillGap(sg){
   const ctx=document.getElementById('skillGapChart').getContext('2d');
   if(sgChart)sgChart.destroy();
 
+  // FILTER: Exclude GENERAL — bukan departemen, hanya soal baseline
+  const filtered = sg.labels
+    .map((l, i) => ({ label: l, val: sg.data[i] }))
+    .filter(x => x.label.toUpperCase() !== 'GENERAL');
+
+  // Jika setelah filter tidak ada data departemen
+  if(!filtered.length){
+    canvasWrap.style.display='none';
+    emptyEl.style.display='flex';
+    badge.innerText='Belum ada data dept';
+    badge.style.background='rgba(255,255,255,.05)';
+    badge.style.color='#5e7382';
+    badge.style.border='1px solid rgba(255,255,255,.08)';
+    return;
+  }
+
+  const filteredLabels = filtered.map(x => x.label);
+  const filteredData   = filtered.map(x => x.val);
+
   // Warna bar: merah gelap = kategori paling kritis (index 0), memudar ke bawah
-  const maxVal=Math.max(...sg.data);
-  const bgColors=sg.data.map(v=>{
+  const maxVal=Math.max(...filteredData);
+  const bgColors=filteredData.map(v=>{
     const intensity=maxVal>0?v/maxVal:0;
     const alpha=0.45+intensity*0.4;
     return `rgba(240,107,107,${alpha.toFixed(2)})`;
@@ -771,9 +790,9 @@ function renderSkillGap(sg){
   sgChart=new Chart(ctx,{
     type:'bar',
     data:{
-      labels:sg.labels,
+      labels:filteredLabels,
       datasets:[{
-        label:'Jawaban Salah',data:sg.data,
+        label:'Jawaban Salah',data:filteredData,
         backgroundColor:bgColors,
         borderRadius:4,borderSkipped:false,borderWidth:0
       }]
