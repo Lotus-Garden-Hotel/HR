@@ -625,30 +625,28 @@ function closeScanner() {
 async function startCamera() {
   try {
     // Preferensikan kamera belakang, fallback ke kamera manapun
-    const constraints = {
-      video: {
-        facingMode: { ideal: "environment" },
-        width:  { ideal: 1280 },
-        height: { ideal: 720 }
-      }
-    };
-    stream = await navigator.mediaDevices.getUserMedia(constraints).catch(() =>
-      navigator.mediaDevices.getUserMedia({ video: true })
-    );
+    let stream_;
+    try {
+      stream_ = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal:"environment" }, width:{ideal:1280}, height:{ideal:720} }
+      });
+    } catch {
+      stream_ = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
+    stream = stream_;
     const vid = document.getElementById("qrVideo");
     vid.srcObject = stream;
-    // Tunggu canplay — lebih reliable dari loadedmetadata di Android/iOS
-    vid.addEventListener("canplay", function onCanPlay() {
-      vid.removeEventListener("canplay", onCanPlay);
-      vid.play().then(() => {
-        scanning = true;
-        document.getElementById("scanStatus").textContent = "Menunggu QR Code…";
-        rafId = requestAnimationFrame(tick);
-      }).catch(err => {
-        document.getElementById("scanStatus").textContent = "❌ Video tidak bisa dimulai: " + err.message;
-      });
-    }, { once: true });
-    vid.load();
+    // JANGAN panggil vid.load() — itu reset stream di beberapa browser
+    // Gunakan event 'playing' yang paling reliable untuk mendeteksi video siap
+    const startScan = () => {
+      scanning = true;
+      document.getElementById("scanStatus").textContent = "Menunggu QR Code…";
+      if (!rafId) rafId = requestAnimationFrame(tick);
+    };
+    vid.addEventListener("playing", startScan, { once: true });
+    vid.play().catch(err => {
+      document.getElementById("scanStatus").textContent = "❌ Video tidak bisa dimulai: " + err.message;
+    });
   } catch (e) {
     document.getElementById("scanStatus").textContent = "❌ Kamera tidak bisa diakses: " + e.message;
   }
@@ -662,20 +660,31 @@ function tick() {
   if (!scanning) return;
   const vid    = document.getElementById("qrVideo");
   const canvas = document.getElementById("scanCanvas");
-  // Tunggu video benar-benar siap
-  if (vid.readyState < vid.HAVE_ENOUGH_DATA || vid.videoWidth === 0) {
+
+  // Tunggu sampai video benar-benar punya frame
+  if (vid.readyState < vid.HAVE_ENOUGH_DATA || vid.videoWidth === 0 || vid.paused) {
     rafId = requestAnimationFrame(tick); return;
   }
-  // Scale canvas ke devicePixelRatio agar jsQR bisa detect di layar HDPI/Retina
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width  = vid.videoWidth  * dpr;
-  canvas.height = vid.videoHeight * dpr;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(dpr, dpr);
-  ctx.drawImage(vid, 0, 0, vid.videoWidth, vid.videoHeight);
-  const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
-  if (code) {
+
+  // Gambar langsung dengan resolusi asli video — TANPA DPR scaling
+  // jsQR butuh pixel 1:1, bukan scaled display pixel
+  const w = vid.videoWidth;
+  const h = vid.videoHeight;
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width  = w;
+    canvas.height = h;
+  }
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  // Reset transform setiap frame (ctx.scale() bersifat kumulatif jika tidak direset)
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(vid, 0, 0, w, h);
+
+  // getImageData harus sesuai canvas.width/height yang sudah benar
+  const img  = ctx.getImageData(0, 0, w, h);
+  const code = jsQR(img.data, img.width, img.height, {
+    inversionAttempts: "attemptBoth"   // coba normal + inverted agar lebih reliable
+  });
+  if (code && code.data) {
     scanning = false;
     stopCamera();
     closeScanner();
