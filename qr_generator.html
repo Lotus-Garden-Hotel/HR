@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Generator · Guard Patrol · Lotus Garden</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+  --amber:#f0a500;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;
+  --text:#f0f6fc;--muted:#8b949e;
+  --font:'Rajdhani',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:var(--bg2);border-bottom:1px solid var(--border);}
+.logo{font-size:18px;font-weight:700;letter-spacing:.05em;}
+.logo span{color:var(--amber);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+
+/* SYNC BAR */
+#syncBar{
+  display:flex;align-items:center;gap:10px;padding:8px 24px;
+  font-size:12px;font-family:var(--mono);border-bottom:1px solid var(--border);transition:background .3s;
+}
+#syncBar.synced {background:rgba(34,197,94,.08);color:var(--green);}
+#syncBar.syncing{background:rgba(59,130,246,.08);color:var(--blue);}
+#syncBar.error  {background:rgba(239,68,68,.08); color:var(--red);}
+#syncBar.offline{background:rgba(240,165,0,.08); color:var(--amber);}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.synced  .sync-dot{background:var(--green);animation:pulse 2s infinite;}
+.syncing .sync-dot{background:var(--blue); animation:blink .6s infinite;}
+.error   .sync-dot{background:var(--red);}
+.offline .sync-dot{background:var(--amber);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+#syncDetail{margin-left:auto;font-size:11px;color:var(--muted);}
+
+.container{max-width:1100px;margin:0 auto;padding:24px;display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start;}
+
+/* FORM */
+.form-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;position:sticky;top:20px;}
+.form-card h2{font-size:15px;letter-spacing:.06em;color:var(--muted);margin-bottom:18px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;margin-bottom:6px;}
+.field input,.field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--font);font-size:15px;color:var(--text);outline:none;transition:border .2s;}
+.field input:focus,.field select:focus{border-color:var(--amber);}
+.field select option{background:var(--bg3);}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-family:var(--font);font-size:16px;font-weight:700;cursor:pointer;transition:.2s;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-add{background:var(--amber);color:#0d1117;}
+.btn-add:hover:not(:disabled){filter:brightness(1.1);}
+.btn-batch{background:var(--bg3);border:1px solid var(--border);color:var(--muted);}
+.btn-batch:hover:not(:disabled){border-color:var(--green);color:var(--green);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover:not(:disabled){filter:brightness(1.1);}
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+
+/* TABLE */
+.checkpoint-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;}
+.checkpoint-table th{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);}
+.checkpoint-table td{padding:8px;border-bottom:1px solid rgba(48,54,61,.5);vertical-align:middle;}
+.checkpoint-table tr:hover{background:var(--bg3);}
+.btn-del{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:4px;color:var(--red);padding:3px 8px;cursor:pointer;font-size:12px;}
+.btn-del:disabled{opacity:.4;cursor:not-allowed;}
+.sync-icon{font-size:12px;}
+.sync-icon.ok{color:var(--green);}
+.sync-icon.pending{color:var(--amber);}
+
+/* QR PREVIEW */
+.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
+.qr-card{background:#fff;border-radius:12px;padding:16px;text-align:center;transition:transform .2s,box-shadow .2s;box-shadow:0 2px 10px rgba(0,0,0,.3);position:relative;}
+.qr-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.4);}
+.qr-card .hotel-name{font-size:9px;letter-spacing:.1em;color:#666;margin-bottom:8px;font-family:var(--font);}
+.qr-card .hotel-name span{color:var(--amber);}
+.qr-card .qr-box{display:flex;justify-content:center;margin-bottom:10px;}
+.qr-card .cp-name{font-size:16px;font-weight:700;color:#111;letter-spacing:.03em;font-family:var(--font);}
+.qr-card .cp-id{font-size:10px;color:#999;font-family:var(--mono);margin-top:4px;}
+.qr-card .cp-floor{font-size:11px;color:#555;margin-top:2px;}
+.sheet-badge{position:absolute;top:8px;right:8px;font-size:9px;font-family:var(--mono);padding:2px 6px;border-radius:4px;}
+.sheet-badge.synced{background:rgba(34,197,94,.15);color:#22c55e;}
+.sheet-badge.pending{background:rgba(240,165,0,.15);color:#f0a500;}
+.empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);font-family:var(--mono);font-size:13px;}
+
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(0,0,0,.2);border-top-color:#0d1117;border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media print{
+  body{background:#fff!important;}
+  .topbar,#syncBar,.form-card,.no-print{display:none!important;}
+  .container{display:block;padding:0;}
+  .preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10mm;padding:10mm;}
+  .qr-card{border:1px solid #ddd;break-inside:avoid;box-shadow:none;}
+  .qr-card:hover{transform:none;}
+  .sheet-badge{display:none;}
+}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+@media(max-width:900px){.container{grid-template-columns:1fr;}.form-card{position:static;}}
+</style>
+</head>
+<body>
+
+<div class="topbar no-print">
+  <div class="logo">LG <span>PATROL</span> · QR GENERATOR</div>
+  <div class="topbar-right">
+    <button onclick="loadFromSheet()" id="btnReload" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 14px;color:var(--muted);font-family:var(--mono);font-size:12px;cursor:pointer;">↻ Reload Sheet</button>
+    <button onclick="window.print()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 16px;color:var(--text);font-family:var(--font);font-size:14px;cursor:pointer;">🖨️ Print Semua</button>
+  </div>
+</div>
+
+<div id="syncBar" class="offline no-print">
+  <div class="sync-dot"></div>
+  <span id="syncMsg">Menghubungkan ke Google Sheets…</span>
+  <span id="syncDetail"></span>
+</div>
+
+<div class="container">
+  <div class="form-card no-print">
+    <h2>➕ TAMBAH CHECKPOINT</h2>
+    <div class="field"><label>ID CHECKPOINT</label><input type="text" id="cpId" placeholder="CP01" maxlength="10"></div>
+    <div class="field"><label>NAMA LOKASI</label><input type="text" id="cpName" placeholder="Lobi Utama"></div>
+    <div class="field"><label>LANTAI / AREA</label><input type="text" id="cpFloor" placeholder="Lantai 1 · Area Depan"></div>
+    <div class="field">
+      <label>INTERVAL PATROLI</label>
+      <select id="cpInterval">
+        <option value="30">30 menit</option>
+        <option value="45">45 menit</option>
+        <option value="60" selected>60 menit</option>
+        <option value="90">90 menit</option>
+        <option value="120">2 jam</option>
+      </select>
+    </div>
+    <button class="btn btn-add" id="btnAdd" onclick="addCheckpoint()">+ GENERATE QR</button>
+    <hr class="divider">
+    <h2 style="margin-bottom:10px;">📋 TEMPLATE BATCH</h2>
+    <button class="btn btn-batch" id="btnDefault" onclick="loadDefaultCheckpoints()">🏨 Load Default Hotel</button>
+    <button class="btn btn-green" onclick="window.print()" style="margin-top:4px;">🖨️ PRINT SEMUA</button>
+    <hr class="divider">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h2>📌 DAFTAR CHECKPOINT</h2>
+      <button onclick="clearAll()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:5px;padding:3px 10px;color:var(--red);font-size:11px;cursor:pointer;font-family:var(--mono);">Hapus Semua</button>
+    </div>
+    <table class="checkpoint-table">
+      <thead><tr><th>ID</th><th>Nama</th><th>Int.</th><th>Sheet</th><th></th></tr></thead>
+      <tbody id="cpTbody"><tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);font-family:var(--mono);font-size:12px;">Memuat…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;" class="no-print">
+      <span style="font-size:13px;font-family:var(--mono);color:var(--muted);" id="cpCountLabel">0 checkpoint</span>
+      <span style="font-size:11px;font-family:var(--mono);color:var(--muted);" id="sheetCount"></span>
+    </div>
+    <div class="preview-grid" id="qrGrid">
+      <div class="empty-state"><div style="font-size:36px;margin-bottom:12px;">⏳</div><div>Memuat dari Google Sheets…</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyRLSVbq-wQQTXoMpWGt1GIcTnrsM2xg1FeK4dbzjg_-gCrFgdfKFUNzkWgBKqiCQOn/exec";
+
+let checkpoints = [];
+
+const DEFAULTS = [
+  {id:"CP01",name:"Lobi Utama",    floor:"Lantai 1 · Depan",   interval:60},
+  {id:"CP02",name:"Parkir Depan",  floor:"Area Parkir",         interval:60},
+  {id:"CP03",name:"Kolam Renang",  floor:"Lantai 1 · Belakang", interval:90},
+  {id:"CP04",name:"Restoran",      floor:"Lantai 1 · Timur",    interval:60},
+  {id:"CP05",name:"Lift Utama",    floor:"Lobi Lantai 1",       interval:45},
+  {id:"CP06",name:"Koridor Lt 2",  floor:"Lantai 2",            interval:90},
+  {id:"CP07",name:"Koridor Lt 3",  floor:"Lantai 3",            interval:90},
+  {id:"CP08",name:"Back Office",   floor:"Lantai 1 · Belakang", interval:120},
+  {id:"CP09",name:"Area Dapur",    floor:"Lantai 1 · Service",  interval:90},
+];
+
+// ── Sync status ──
+function setSyncStatus(state, msg, detail) {
+  document.getElementById("syncBar").className    = state;
+  document.getElementById("syncMsg").textContent  = msg;
+  document.getElementById("syncDetail").textContent = detail || "";
+}
+
+// ── GAS: Load dari Sheet ──
+async function loadFromSheet() {
+  setSyncStatus("syncing", "Mengambil data dari Google Sheets…");
+  document.getElementById("btnReload").disabled = true;
+  try {
+    const r = await fetch(GAS_URL + "?action=checkpoints", {cache:"no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    if (d.status !== "ok") throw new Error(d.message || "Error GAS");
+    checkpoints = (d.checkpoints || []).map(c => ({
+      id: c.id, name: c.name, floor: c.floor || "", interval: parseInt(c.interval) || 60, synced: true
+    }));
+    localStorage.setItem("checkpoints_cache", JSON.stringify(checkpoints));
+    setSyncStatus("synced", "✓ Tersinkron dengan Google Sheets", "Update: " + new Date().toLocaleTimeString("id-ID"));
+  } catch(e) {
+    const cache = localStorage.getItem("checkpoints_cache");
+    if (cache) {
+      checkpoints = JSON.parse(cache);
+      setSyncStatus("offline", "Offline · Menampilkan cache lokal", e.message);
+    } else {
+      checkpoints = [];
+      setSyncStatus("error", "Gagal terhubung: " + e.message);
+    }
+  }
+  renderAll();
+  autoIncrementId();
+  document.getElementById("btnReload").disabled = false;
+}
+
+// ── GAS: POST helper ──
+async function gasPost(body) {
+  const r = await fetch(GAS_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+  return await r.json();
+}
+
+// ── Tambah ──
+async function addCheckpoint() {
+  const id       = document.getElementById("cpId").value.trim().toUpperCase();
+  const name     = document.getElementById("cpName").value.trim();
+  const floor    = document.getElementById("cpFloor").value.trim();
+  const interval = parseInt(document.getElementById("cpInterval").value);
+  if (!id || !name) { alert("Isi ID dan Nama Lokasi!"); return; }
+  if (checkpoints.find(c => c.id === id)) { alert("ID " + id + " sudah ada!"); return; }
+
+  const cp = {id, name, floor, interval, synced: false};
+  checkpoints.push(cp);
+  saveLocalCache();
+  renderAll();
+
+  // Reset form
+  document.getElementById("cpName").value  = "";
+  document.getElementById("cpFloor").value = "";
+  autoIncrementId();
+
+  // Sync ke Sheet
+  setSyncStatus("syncing", "Menyimpan " + id + " ke Google Sheets…");
+  try {
+    const d = await gasPost({action:"saveCheckpoint", checkpoint: {id,name,floor,interval}});
+    if (d.status === "ok" || d.status === "updated") {
+      checkpoints = checkpoints.map(c => c.id===id ? {...c, synced:true} : c);
+      saveLocalCache();
+      setSyncStatus("synced", "✓ " + id + " tersimpan di Sheets", new Date().toLocaleTimeString("id-ID"));
+    } else throw new Error(d.message);
+  } catch(e) {
+    setSyncStatus("offline", "⚠️ " + id + " tersimpan lokal, belum ke Sheets", e.message);
+  }
+  renderTable();
+}
+
+// ── Hapus satu ──
+async function removeCheckpoint(id) {
+  if (!confirm("Hapus " + id + " dari sistem dan Google Sheets?")) return;
+  checkpoints = checkpoints.filter(c => c.id !== id);
+  saveLocalCache();
+  renderAll();
+  setSyncStatus("syncing", "Menghapus " + id + " dari Sheets…");
+  try {
+    const d = await gasPost({action:"deleteCheckpoint", id});
+    if (d.status === "ok") {
+      setSyncStatus("synced", "✓ " + id + " dihapus dari Sheets", new Date().toLocaleTimeString("id-ID"));
+    } else throw new Error(d.message);
+  } catch(e) {
+    setSyncStatus("offline", "⚠️ Offline · " + id + " dihapus lokal", e.message);
+  }
+}
+
+// ── Load Default ──
+async function loadDefaultCheckpoints() {
+  if (!confirm("Ganti semua checkpoint dengan template default hotel?")) return;
+  const btn = document.getElementById("btnDefault");
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Menyimpan…';
+  checkpoints = DEFAULTS.map(c => ({...c, synced:false}));
+  saveLocalCache();
+  renderAll();
+  setSyncStatus("syncing", "Menyimpan " + checkpoints.length + " checkpoint ke Sheets…");
+  try {
+    const d = await gasPost({action:"batchSaveCheckpoints", checkpoints: DEFAULTS});
+    if (d.status === "ok") {
+      checkpoints = checkpoints.map(c => ({...c, synced:true}));
+      saveLocalCache();
+      setSyncStatus("synced", "✓ " + checkpoints.length + " checkpoint tersimpan di Sheets", new Date().toLocaleTimeString("id-ID"));
+    } else throw new Error(d.message);
+  } catch(e) {
+    setSyncStatus("offline", "⚠️ Offline · Tersimpan lokal", e.message);
+  }
+  renderTable();
+  btn.disabled = false;
+  btn.innerHTML = '🏨 Load Default Hotel';
+}
+
+// ── Hapus semua ──
+async function clearAll() {
+  if (!confirm("Hapus SEMUA checkpoint dari sistem dan Google Sheets?")) return;
+  checkpoints = [];
+  saveLocalCache();
+  renderAll();
+  setSyncStatus("syncing", "Menghapus semua dari Sheets…");
+  try {
+    const d = await gasPost({action:"clearCheckpoints"});
+    if (d.status === "ok") setSyncStatus("synced", "✓ Semua checkpoint dihapus dari Sheets", new Date().toLocaleTimeString("id-ID"));
+    else throw new Error(d.message);
+  } catch(e) {
+    setSyncStatus("offline", "⚠️ Offline · Hapus lokal", e.message);
+  }
+}
+
+// ── Render ──
+function renderAll() {
+  renderTable();
+  renderQRGrid();
+  const synced = checkpoints.filter(c => c.synced).length;
+  document.getElementById("cpCountLabel").textContent = checkpoints.length + " checkpoint";
+  document.getElementById("sheetCount").textContent   = checkpoints.length
+    ? synced + "/" + checkpoints.length + " tersinkron ke Sheets" : "";
+}
+
+function renderTable() {
+  const tbody = document.getElementById("cpTbody");
+  if (!checkpoints.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);font-family:var(--mono);font-size:12px;">Belum ada checkpoint</td></tr>';
+    return;
+  }
+  tbody.innerHTML = checkpoints.map(c => `
+    <tr>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--amber);">${c.id}</td>
+      <td style="font-size:13px;">${c.name}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">${c.interval}m</td>
+      <td><span class="sync-icon ${c.synced?'ok':'pending'}" title="${c.synced?'Tersimpan di Sheets':'Belum tersinkron'}">${c.synced?'✓':'⏳'}</span></td>
+      <td><button class="btn-del" onclick="removeCheckpoint('${c.id}')">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderQRGrid() {
+  const grid = document.getElementById("qrGrid");
+  if (!checkpoints.length) {
+    grid.innerHTML = `<div class="empty-state"><div style="font-size:40px;margin-bottom:12px;">📷</div><div>Belum ada QR Code.</div><div style="margin-top:8px;">Tambah checkpoint atau klik <strong style="color:var(--amber)">Load Default Hotel</strong></div></div>`;
+    return;
+  }
+  grid.innerHTML = checkpoints.map(c => `
+    <div class="qr-card" id="card_${c.id}">
+      <span class="sheet-badge ${c.synced?'synced':'pending'} no-print">${c.synced?'✓ Sheets':'⏳ Lokal'}</span>
+      <div class="hotel-name">🏨 LOTUS GARDEN <span>HOTEL</span></div>
+      <div class="qr-box" id="qr_${c.id}"></div>
+      <div class="cp-name">${c.name}</div>
+      <div class="cp-id">${c.id} · ${c.interval} menit</div>
+      <div class="cp-floor">${c.floor||''}</div>
+    </div>`).join('');
+
+  checkpoints.forEach(c => {
+    const el = document.getElementById("qr_" + c.id);
+    if (el && !el.hasChildNodes()) {
+      try {
+        new QRCode(el, {
+          text: JSON.stringify({id:c.id, name:c.name, floor:c.floor, interval:c.interval}),
+          width:140, height:140, colorDark:"#000000", colorLight:"#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      } catch(e) { el.textContent = "QR error: " + e.message; }
+    }
+  });
+}
+
+function saveLocalCache() {
+  localStorage.setItem("checkpoints_cache", JSON.stringify(checkpoints));
+}
+
+function autoIncrementId() {
+  const maxNum = checkpoints.reduce((m, c) => {
+    const n = parseInt(c.id.replace(/\D/g,"")) || 0;
+    return Math.max(m, n);
+  }, 0);
+  document.getElementById("cpId").value = "CP" + String(maxNum + 1).padStart(2, "0");
+}
+
+// ── Init ──
+window.addEventListener("DOMContentLoaded", () => loadFromSheet());
+window.addEventListener("online", () => loadFromSheet());
+</script>
+</body>
+</html>
