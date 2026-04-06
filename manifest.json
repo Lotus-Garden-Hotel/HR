@@ -1,0 +1,50 @@
+{
+  "name": "Guard Patrol · Lotus Garden Hotel",
+  "short_name": "LG Patrol",
+  "description": "Security Guard Patrol Management System – Lotus Garden Hotel Kediri",
+  "start_url": "./satpam_patrol.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0d1117",
+  "background_color": "#0d1117",
+  "lang": "id",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Guard Patrol",
+      "short_name": "Patrol",
+      "description": "Buka aplikasi patroli petugas",
+      "url": "./satpam_patrol.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Supervisor Dashboard",
+      "short_name": "Dashboard",
+      "description": "Monitor patroli real-time",
+      "url": "./supervisor_dashboard.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "HRD Report",
+      "short_name": "HRD",
+      "description": "Laporan patroli untuk HRD",
+      "url": "./hrd_report.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LG Supervisor">
+<meta name="application-name" content="LG Supervisor">
+<meta name="description" content="Supervisor dashboard monitoring patroli real-time Lotus Garden Hotel">
+<title>Supervisor Dashboard · Lotus Garden</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #0d1117; --bg2:#161b22; --bg3:#21262d;
+  --border: #30363d; --amber:#f0a500; --amber2:#fbbf24;
+  --green:  #22c55e; --red:#ef4444; --yellow:#facc15;
+  --blue:   #3b82f6; --purple:#818cf8;
+  --text:   #f0f6fc; --muted:#8b949e;
+  --font:   'Rajdhani',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:56px;background:var(--bg2);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.logo{font-size:18px;font-weight:700;letter-spacing:.05em;}
+.logo span{color:var(--amber);}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.live-badge{
+  display:flex;align-items:center;gap:6px;font-size:12px;font-family:var(--mono);
+  color:var(--green);border:1px solid rgba(34,197,94,.3);
+  border-radius:20px;padding:4px 12px;
+}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.btn-refresh{
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:6px 14px;color:var(--muted);font-family:var(--mono);font-size:12px;cursor:pointer;
+  transition:.2s;
+}
+.btn-refresh:hover{border-color:var(--amber);color:var(--amber);}
+.last-update{font-size:11px;font-family:var(--mono);color:var(--muted);}
+
+/* ── LAYOUT ── */
+.body-wrap{flex:1;display:grid;grid-template-columns:1fr 340px;gap:0;overflow:hidden;}
+
+/* ── LEFT PANEL ── */
+.left-panel{overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:16px;position:relative;overflow:hidden;
+}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+}
+.stat-card.green::before{background:var(--green);}
+.stat-card.amber::before{background:var(--amber);}
+.stat-card.red::before{background:var(--red);}
+.stat-card.blue::before{background:var(--blue);}
+.stat-card .num{font-size:32px;font-weight:700;font-family:var(--mono);}
+.stat-card.green .num{color:var(--green);}
+.stat-card.amber .num{color:var(--amber);}
+.stat-card.red .num{color:var(--red);}
+.stat-card.blue .num{color:var(--blue);}
+.stat-card .lbl{font-size:11px;color:var(--muted);letter-spacing:.08em;margin-top:4px;}
+
+/* ── SECTION ── */
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.section-hdr h2{font-size:14px;letter-spacing:.06em;color:var(--muted);}
+.section-hdr .badge{font-size:11px;font-family:var(--mono);padding:3px 8px;border-radius:4px;}
+
+/* ── SHIFT TABS ── */
+.shift-tabs{display:flex;gap:8px;margin-bottom:14px;}
+.shift-tab{
+  flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;
+  background:var(--bg3);cursor:pointer;text-align:center;font-size:14px;
+  font-weight:600;transition:.2s;color:var(--muted);
+}
+.shift-tab.active.siang{background:rgba(250,204,21,.1);border-color:var(--yellow);color:var(--yellow);}
+.shift-tab.active.malam{background:rgba(129,140,248,.1);border-color:var(--purple);color:var(--purple);}
+
+/* ── CHECKPOINT GRID ── */
+.cp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+.cp-card{
+  border:1px solid var(--border);border-radius:10px;padding:12px;
+  cursor:default;transition:.2s;position:relative;overflow:hidden;
+}
+.cp-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+}
+.cp-card.ok{background:rgba(34,197,94,.06);}
+.cp-card.ok::after{background:var(--green);}
+.cp-card.warn{background:rgba(250,204,21,.06);}
+.cp-card.warn::after{background:var(--yellow);animation:warnPulse 2s infinite;}
+.cp-card.missed{background:rgba(239,68,68,.08);}
+.cp-card.missed::after{background:var(--red);}
+.cp-card.idle{background:var(--bg3);}
+@keyframes warnPulse{0%,100%{opacity:.5}50%{opacity:1}}
+.cp-icon{font-size:20px;margin-bottom:6px;}
+.cp-name{font-size:14px;font-weight:700;margin-bottom:4px;}
+.cp-last{font-size:11px;font-family:var(--mono);color:var(--muted);}
+.cp-badge{
+  display:inline-block;font-size:10px;font-family:var(--mono);
+  padding:2px 6px;border-radius:3px;margin-top:6px;font-weight:500;
+}
+.ok .cp-badge{background:rgba(34,197,94,.2);color:var(--green);}
+.warn .cp-badge{background:rgba(250,204,21,.2);color:var(--yellow);}
+.missed .cp-badge{background:rgba(239,68,68,.2);color:var(--red);}
+.idle .cp-badge{background:var(--bg3);color:var(--muted);border:1px solid var(--border);}
+
+/* ── LIVE LOG ── */
+.log-scroll{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.log-row{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;
+  background:var(--bg3);border-radius:8px;animation:fadeIn .4s ease;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.log-row .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.log-row .dot.ok{background:var(--green);}
+.log-row .dot.missed{background:var(--red);}
+.log-row .info{flex:1;}
+.log-row .info .loc{font-size:13px;font-weight:600;}
+.log-row .info .who{font-size:11px;font-family:var(--mono);color:var(--muted);}
+.log-row .time{font-size:12px;font-family:var(--mono);color:var(--amber);}
+
+/* ── RIGHT PANEL (ALERTS) ── */
+.right-panel{
+  border-left:1px solid var(--border);overflow-y:auto;
+  padding:20px;display:flex;flex-direction:column;gap:16px;
+  background:rgba(13,17,23,.5);
+}
+.panel-title{font-size:13px;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;}
+
+/* ── ALERT LIST ── */
+.alert-list{display:flex;flex-direction:column;gap:8px;}
+.alert-card{
+  border-radius:10px;padding:12px;border:1px solid;
+}
+.alert-card.critical{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);}
+.alert-card.warn{background:rgba(250,204,21,.06);border-color:rgba(250,204,21,.3);}
+.alert-card .a-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.alert-card.critical .a-title{color:var(--red);}
+.alert-card.warn .a-title{color:var(--yellow);}
+.alert-card .a-sub{font-size:12px;font-family:var(--mono);color:var(--muted);}
+
+/* ── SATPAM STATUS ── */
+.guard-list{display:flex;flex-direction:column;gap:8px;}
+.guard-row{
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg3);border-radius:8px;padding:10px 12px;
+}
+.guard-avatar{
+  width:32px;height:32px;border-radius:50%;background:var(--bg2);
+  border:2px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;color:var(--amber);flex-shrink:0;
+}
+.guard-info{flex:1;}
+.guard-info .gname{font-size:14px;font-weight:600;}
+.guard-info .gsub{font-size:11px;font-family:var(--mono);color:var(--muted);}
+.guard-status{font-size:11px;font-family:var(--mono);padding:3px 8px;border-radius:4px;}
+.guard-status.active{background:rgba(34,197,94,.15);color:var(--green);}
+.guard-status.late{background:rgba(239,68,68,.15);color:var(--red);}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .body-wrap{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+  .right-panel{display:none;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="logo">LG <span>PATROL</span> · SUPERVISOR</div>
+  <div class="topbar-right">
+    <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+    <span class="last-update" id="lastUpdate">Update: –</span>
+    <button class="btn-refresh" onclick="fetchData()">⟳ Refresh</button>
+    <button class="btn-refresh" onclick="showLogin()" style="color:var(--red);border-color:rgba(239,68,68,.3);">Logout</button>
+  </div>
+</div>
+
+<!-- ── LOGIN OVERLAY ── -->
+<div id="loginOverlay" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:32px;width:340px;">
+    <h2 style="font-size:20px;margin-bottom:4px;">🔒 Supervisor Login</h2>
+    <p style="font-size:13px;color:var(--muted);font-family:var(--mono);margin-bottom:24px;">Lotus Garden Hotel</p>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;display:block;margin-bottom:6px;">USERNAME</label>
+      <input id="svUser" type="text" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--font);font-size:15px;color:var(--text);outline:none;">
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;display:block;margin-bottom:6px;">PASSWORD</label>
+      <input id="svPass" type="password" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--font);font-size:15px;color:var(--text);outline:none;">
+    </div>
+    <button onclick="svLogin()" style="width:100%;padding:12px;background:var(--amber);border:none;border-radius:8px;font-family:var(--font);font-size:16px;font-weight:700;color:#0d1117;cursor:pointer;">MASUK →</button>
+    <div id="svErr" style="display:none;font-size:12px;color:var(--red);font-family:var(--mono);margin-top:10px;text-align:center;"></div>
+  </div>
+</div>
+
+<!-- ── BODY ── -->
+<div class="body-wrap">
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card green">
+        <div class="num" id="sOk">0</div>
+        <div class="lbl">CHECKPOINT OK</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="num" id="sWarn">0</div>
+        <div class="lbl">HAMPIR TERLAMBAT</div>
+      </div>
+      <div class="stat-card red">
+        <div class="num" id="sMissed">0</div>
+        <div class="lbl">TERLEWAT</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="num" id="sTotal">0</div>
+        <div class="lbl">TOTAL SCAN HARI INI</div>
+      </div>
+    </div>
+
+    <!-- Shift tabs + Checkpoint grid -->
+    <div class="section">
+      <div class="section-hdr">
+        <h2>STATUS CHECKPOINT</h2>
+        <span class="badge" id="shiftLabel" style="background:rgba(250,204,21,.1);color:var(--yellow);border:1px solid rgba(250,204,21,.3);">SHIFT SIANG</span>
+      </div>
+      <div class="shift-tabs">
+        <div class="shift-tab active siang" id="tabSiang" onclick="switchShift('siang')">☀️ SIANG (06–18)</div>
+        <div class="shift-tab malam" id="tabMalam" onclick="switchShift('malam')">🌙 MALAM (18–06)</div>
+      </div>
+      <div class="cp-grid" id="cpGrid">
+        <!-- Generated by JS -->
+      </div>
+    </div>
+
+    <!-- Live Log -->
+    <div class="section">
+      <div class="section-hdr">
+        <h2>LOG TERBARU</h2>
+        <span class="badge" id="logCount" style="background:var(--bg3);color:var(--muted);border:1px solid var(--border);">0 entri</span>
+      </div>
+      <div class="log-scroll" id="liveLog">
+        <div style="text-align:center;padding:24px;color:var(--muted);font-family:var(--mono);font-size:13px;">Belum ada data</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <!-- Alerts -->
+    <div>
+      <div class="panel-title">⚠️ ALERT AKTIF</div>
+      <div class="alert-list" id="alertList">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-family:var(--mono);font-size:12px;">Tidak ada alert</div>
+      </div>
+    </div>
+
+    <!-- Guard Status -->
+    <div>
+      <div class="panel-title">👮 STATUS PETUGAS</div>
+      <div class="guard-list" id="guardList">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-family:var(--mono);font-size:12px;">Memuat data…</div>
+      </div>
+    </div>
+
+    <!-- Quick Recap -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;">
+      <div class="panel-title">📊 REKAP SHIFT INI</div>
+      <div style="display:flex;flex-direction:column;gap:8px;" id="recapList">
+        <!-- rows -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyRLSVbq-wQQTXoMpWGt1GIcTnrsM2xg1FeK4dbzjg_-gCrFgdfKFUNzkWgBKqiCQOn/exec";
+const REFRESH_INTERVAL = 30000; // 30 detik
+
+// ── Checkpoint: dinamis dari Sheet (bukan hardcode) ──
+let checkpointsDef = []; // diisi oleh loadCheckpoints()
+let currentShift   = "siang";
+let allLogs        = [];
+let refreshTimer   = null;
+
+// Mapping icon otomatis berdasarkan nama checkpoint
+function getIcon(name) {
+  const n = (name || "").toLowerCase();
+  if (n.includes("lobi") || n.includes("lobby"))  return "🚪";
+  if (n.includes("parkir") || n.includes("park"))  return "🚗";
+  if (n.includes("kolam") || n.includes("pool"))   return "🏊";
+  if (n.includes("restoran") || n.includes("resto") || n.includes("restaurant")) return "🍽️";
+  if (n.includes("lift") || n.includes("elevator")) return "🛗";
+  if (n.includes("lantai") || n.includes("floor") || n.includes("koridor")) return "🏨";
+  if (n.includes("office") || n.includes("kantor")) return "🏢";
+  if (n.includes("dapur") || n.includes("kitchen")) return "👨‍🍳";
+  if (n.includes("gym") || n.includes("fitness"))   return "💪";
+  if (n.includes("spa") || n.includes("sauna"))     return "🧖";
+  if (n.includes("laundry") || n.includes("linen"))  return "🧺";
+  if (n.includes("garden") || n.includes("taman"))   return "🌿";
+  if (n.includes("roof") || n.includes("atap"))      return "🏙️";
+  return "📍"; // default
+}
+
+// Load checkpoint dari GAS → fallback localStorage
+async function loadCheckpoints() {
+  try {
+    const r = await fetch(GAS_URL + "?action=checkpoints", {cache:"no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    if (d.status !== "ok" || !d.checkpoints.length) throw new Error("Data kosong");
+    checkpointsDef = d.checkpoints.map(c => ({
+      id:          c.id,
+      name:        c.name,
+      icon:        getIcon(c.name),
+      intervalMin: parseInt(c.interval) || 60,
+      floor:       c.floor || ""
+    }));
+    // Cache ke localStorage sebagai fallback
+    localStorage.setItem("sv_cp_cache", JSON.stringify(checkpointsDef));
+  } catch (e) {
+    // Fallback ke cache localStorage
+    const cache = localStorage.getItem("sv_cp_cache");
+    if (cache) {
+      checkpointsDef = JSON.parse(cache);
+    } else {
+      // Last resort: hardcode minimal supaya dashboard tidak kosong
+      checkpointsDef = [{id:"CP01",name:"Checkpoint 1",icon:"📍",intervalMin:60}];
+    }
+  }
+}
+
+// ── LOGIN ──
+async function svLogin() {
+  const u = document.getElementById("svUser").value.trim();
+  const p = document.getElementById("svPass").value;
+  if (!u || !p) return;
+  try {
+    const r = await fetch(GAS_URL + "?action=login&user=" + encodeURIComponent(u) + "&pass=" + encodeURIComponent(p) + "&role=supervisor");
+    const d = await r.json();
+    if (d.status !== "ok") throw new Error(d.message);
+    localStorage.setItem("sv_session", "1");
+    document.getElementById("loginOverlay").style.display = "none";
+    startDashboard();
+  } catch (e) {
+    // Demo mode
+    if (u === "supervisor" && p === "supervisor123") {
+      localStorage.setItem("sv_session", "1");
+      document.getElementById("loginOverlay").style.display = "none";
+      startDashboard();
+    } else {
+      const er = document.getElementById("svErr");
+      er.style.display = "block"; er.textContent = "Login gagal: " + e.message;
+    }
+  }
+}
+function showLogin() {
+  localStorage.removeItem("sv_session");
+  document.getElementById("loginOverlay").style.display = "flex";
+}
+
+// ── SHIFT ──
+function switchShift(s) {
+  currentShift = s;
+  document.getElementById("tabSiang").classList.toggle("active", s==="siang");
+  document.getElementById("tabSiang").classList.toggle("siang", s==="siang");
+  document.getElementById("tabMalam").classList.toggle("active", s==="malam");
+  document.getElementById("tabMalam").classList.toggle("malam", s==="malam");
+  renderAll();
+}
+function getActiveShift() {
+  const h = new Date().getHours();
+  return (h >= 6 && h < 18) ? "siang" : "malam";
+}
+
+// ── FETCH ──
+async function fetchData() {
+  try {
+    const r = await fetch(GAS_URL + "?action=dashboardData&shift=" + currentShift);
+    const d = await r.json();
+    allLogs = d.logs || [];
+  } catch {
+    // Use demo data
+    allLogs = generateDemoLogs();
+  }
+  renderAll();
+  document.getElementById("lastUpdate").textContent =
+    "Update: " + new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+
+function generateDemoLogs() {
+  if (!checkpointsDef.length) return [];
+  const now    = new Date();
+  const guards = ["Agus S.", "Budi W.", "Candra P."];
+  const logs   = [];
+  for (let i = 0; i < 18; i++) {
+    const cp = checkpointsDef[Math.floor(Math.random() * checkpointsDef.length)];
+    const t  = new Date(now - Math.random() * 3 * 3600000);
+    logs.push({
+      checkpoint: cp.id, cpName: cp.name, timestamp: t.toISOString(),
+      user: guards[Math.floor(Math.random() * guards.length)], shift: "siang"
+    });
+  }
+  return logs.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+// ── RENDER ──
+function renderAll() {
+  renderCheckpoints();
+  renderLog();
+  renderAlerts();
+  renderGuards();
+  renderRecap();
+}
+
+function getLastScan(cpId) {
+  return allLogs.find(l => l.checkpoint === cpId);
+}
+function getCPStatus(cp) {
+  const last = getLastScan(cp.id);
+  if (!last) return "idle";
+  const minAgo = (Date.now() - new Date(last.timestamp)) / 60000;
+  if (minAgo <= cp.intervalMin * 0.8) return "ok";
+  if (minAgo <= cp.intervalMin)       return "warn";
+  return "missed";
+}
+function getStatusLabel(s) {
+  return {ok:"✓ OK", warn:"⚡ SEGERA", missed:"✗ MISSED", idle:"○ IDLE"}[s];
+}
+
+function renderCheckpoints() {
+  const grid = document.getElementById("cpGrid");
+  if (!checkpointsDef.length) {
+    grid.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-family:var(--mono);font-size:13px;">Memuat checkpoint dari Sheets…</div>';
+    return;
+  }
+  grid.innerHTML = checkpointsDef.map(cp => {
+    const s    = getCPStatus(cp);
+    const last = getLastScan(cp.id);
+    const t    = last ? new Date(last.timestamp).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}) : "–";
+    const by   = last ? last.user : "–";
+    return `<div class="cp-card ${s}">
+      <div class="cp-icon">${cp.icon}</div>
+      <div class="cp-name">${cp.name}</div>
+      <div class="cp-last">Terakhir: ${t}</div>
+      <div class="cp-last">Oleh: ${by}</div>
+      <span class="cp-badge">${getStatusLabel(s)}</span>
+    </div>`;
+  }).join('');
+
+  const statuses = checkpointsDef.map(cp => getCPStatus(cp));
+  document.getElementById("sOk").textContent     = statuses.filter(s=>s==="ok").length;
+  document.getElementById("sWarn").textContent   = statuses.filter(s=>s==="warn").length;
+  document.getElementById("sMissed").textContent = statuses.filter(s=>s==="missed").length;
+  document.getElementById("sTotal").textContent  = allLogs.length;
+
+  const activeS = getActiveShift();
+  const lbl = document.getElementById("shiftLabel");
+  lbl.textContent = activeS === "siang" ? "SHIFT SIANG" : "SHIFT MALAM";
+}
+
+function renderLog() {
+  const el = document.getElementById("liveLog");
+  if (!allLogs.length) { el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-family:var(--mono);font-size:13px;">Belum ada data</div>'; return; }
+  const show = allLogs.slice(0, 20);
+  el.innerHTML = show.map(l => {
+    const t = new Date(l.timestamp).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"});
+    return `<div class="log-row">
+      <div class="dot ok"></div>
+      <div class="info"><div class="loc">${l.cpName || l.checkpoint}</div><div class="who">${l.user}</div></div>
+      <div class="time">${t}</div>
+    </div>`;
+  }).join('');
+  document.getElementById("logCount").textContent = allLogs.length + " entri";
+}
+
+function renderAlerts() {
+  const el     = document.getElementById("alertList");
+  const missed = checkpointsDef.filter(cp => getCPStatus(cp) === "missed");
+  const warn   = checkpointsDef.filter(cp => getCPStatus(cp) === "warn");
+  if (!missed.length && !warn.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--green);font-family:var(--mono);font-size:12px;">✓ Semua aman</div>';
+    return;
+  }
+  el.innerHTML = [
+    ...missed.map(cp => `<div class="alert-card critical"><div class="a-title">🚨 ${cp.name}</div><div class="a-sub">Tidak ada patroli > ${cp.intervalMin} menit</div></div>`),
+    ...warn.map(cp   => `<div class="alert-card warn"><div class="a-title">⚠️ ${cp.name}</div><div class="a-sub">Segera patroli area ini</div></div>`)
+  ].join('');
+}
+
+function renderGuards() {
+  const guardMap = {};
+  allLogs.forEach(l => {
+    if (!guardMap[l.user]) guardMap[l.user] = { count:0, lastTime:null };
+    guardMap[l.user].count++;
+    const t = new Date(l.timestamp);
+    if (!guardMap[l.user].lastTime || t > guardMap[l.user].lastTime) guardMap[l.user].lastTime = t;
+  });
+  const el = document.getElementById("guardList");
+  if (!Object.keys(guardMap).length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-family:var(--mono);font-size:12px;">Tidak ada data petugas</div>';
+    return;
+  }
+  el.innerHTML = Object.entries(guardMap).map(([name, d]) => {
+    const lastMin = d.lastTime ? Math.round((Date.now()-d.lastTime)/60000) : 999;
+    const status  = lastMin < 30 ? "active" : "late";
+    const init    = name.charAt(0).toUpperCase();
+    const lastStr = d.lastTime ? d.lastTime.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}) : "–";
+    return `<div class="guard-row">
+      <div class="guard-avatar">${init}</div>
+      <div class="guard-info"><div class="gname">${name}</div><div class="gsub">${d.count} scan · terakhir ${lastStr}</div></div>
+      <div class="guard-status ${status}">${status==="active"?"● AKTIF":"○ IDLE"}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderRecap() {
+  const el      = document.getElementById("recapList");
+  const total   = allLogs.length;
+  const missed  = checkpointsDef.filter(cp => getCPStatus(cp) === "missed").length;
+  const okRate  = checkpointsDef.length ? Math.round((checkpointsDef.length - missed) / checkpointsDef.length * 100) : 0;
+  const guards  = new Set(allLogs.map(l=>l.user)).size;
+  const rows = [
+    ["Total Scan",        total],
+    ["Checkpoint",        checkpointsDef.length + " titik"],
+    ["Checkpoint Missed", missed],
+    ["Kepatuhan",         okRate + "%"],
+    ["Petugas Aktif",     guards + " orang"],
+  ];
+  el.innerHTML = rows.map(([k,v]) => `
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;color:var(--muted);">${k}</span>
+      <span style="font-size:14px;font-weight:700;font-family:var(--mono);color:var(--amber);">${v}</span>
+    </div>`).join('');
+}
+
+// ── INIT ──
+async function startDashboard() {
+  // Load checkpoint dari Sheet dulu, baru render data patroli
+  await loadCheckpoints();
+  currentShift = getActiveShift();
+  switchShift(currentShift);
+  await fetchData();
+  refreshTimer = setInterval(fetchData, REFRESH_INTERVAL);
+  // Reload checkpoint setiap 5 menit (jika ada perubahan di QR Generator)
+  setInterval(loadCheckpoints, 5 * 60 * 1000);
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  if (localStorage.getItem("sv_session")) {
+    document.getElementById("loginOverlay").style.display = "none";
+    startDashboard();
+  }
+});
+</script>
+
+<!-- ══════════ PWA: SERVICE WORKER + INSTALL PROMPT ══════════ -->
+<div id="pwaInstallBanner" style="
+  display:none; position:fixed; bottom:24px; right:24px;
+  background:#161b22; border:1px solid rgba(240,165,0,.4); border-radius:12px;
+  padding:12px 16px; max-width:300px;
+  box-shadow:0 8px 32px rgba(0,0,0,.6); z-index:9999;
+  align-items:center; gap:12px; font-family:'Rajdhani',sans-serif;">
+  <img src="icon-192.png" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
+  <div style="flex:1;">
+    <div style="font-weight:700;font-size:14px;color:#f0f6fc;">Install LG Supervisor</div>
+    <div style="font-size:12px;color:#8b949e;">Akses cepat dari layar utama</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+    <button id="pwaInstallBtn" style="background:#f0a500;color:#0d1117;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;">INSTALL</button>
+    <button onclick="document.getElementById('pwaInstallBanner').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:11px;cursor:pointer;">Nanti</button>
+  </div>
+</div>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js", { scope: "./" })
+      .then(reg => {
+        console.log("[PWA] SW registered:", reg.scope);
+        setInterval(() => reg.update(), 60000);
+      })
+      .catch(err => console.warn("[PWA] SW error:", err));
+  });
+}
+
+let deferredPrompt;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(() => {
+    const b = document.getElementById("pwaInstallBanner");
+    if (b) b.style.display = "flex";
+  }, 3000);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("pwaInstallBtn");
+  if (btn) {
+    btn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById("pwaInstallBanner").style.display = "none";
+    });
+  }
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredPrompt = null;
+  document.getElementById("pwaInstallBanner").style.display = "none";
+});
+</script>
+</body>
+</html>

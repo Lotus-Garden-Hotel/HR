@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LG HRD Report">
+<meta name="application-name" content="LG HRD Report">
+<meta name="description" content="Laporan dan analitik patroli satpam untuk HRD Lotus Garden Hotel">
+<title>HRD Report · Guard Patrol · Lotus Garden</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+  --amber:#f0a500;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;
+  --text:#f0f6fc;--muted:#8b949e;
+  --font:'Rajdhani',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:var(--bg2);border-bottom:1px solid var(--border);}
+.logo{font-size:18px;font-weight:700;letter-spacing:.05em;}
+.logo span{color:var(--amber);}
+
+/* LAYOUT */
+.container{max-width:1300px;margin:0 auto;padding:24px;}
+
+/* FILTER CARD */
+.filter-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;}
+.filter-row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;}
+.f-group{display:flex;flex-direction:column;gap:6px;min-width:160px;}
+.f-group label{font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;}
+.f-group input,.f-group select{
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:9px 12px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;
+  transition:border .2s;
+}
+.f-group input:focus,.f-group select:focus{border-color:var(--amber);}
+.f-group select option{background:var(--bg3);}
+.btn-filter{
+  padding:9px 20px;background:var(--amber);border:none;border-radius:8px;
+  font-family:var(--font);font-size:15px;font-weight:700;color:#0d1117;cursor:pointer;
+  transition:.2s;white-space:nowrap;
+}
+.btn-filter:hover{filter:brightness(1.1);}
+.btn-export{
+  padding:9px 20px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;font-family:var(--font);font-size:14px;color:var(--muted);
+  cursor:pointer;transition:.2s;white-space:nowrap;
+}
+.btn-export:hover{border-color:var(--green);color:var(--green);}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.stat-card .n{font-size:34px;font-weight:700;font-family:var(--mono);}
+.stat-card .l{font-size:11px;color:var(--muted);letter-spacing:.07em;margin-top:4px;}
+.stat-card.a .n{color:var(--amber);}
+.stat-card.g .n{color:var(--green);}
+.stat-card.r .n{color:var(--red);}
+.stat-card.b .n{color:var(--blue);}
+
+/* TWO-COL */
+.two-col{display:grid;grid-template-columns:1fr 380px;gap:16px;margin-bottom:20px;}
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.section h3{font-size:13px;letter-spacing:.08em;color:var(--muted);margin-bottom:14px;}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+thead tr{border-bottom:2px solid var(--border);}
+th{padding:10px 12px;text-align:left;font-size:11px;letter-spacing:.08em;color:var(--muted);font-family:var(--mono);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+tbody tr:hover{background:var(--bg3);}
+td{padding:10px 12px;font-size:14px;white-space:nowrap;}
+td.mono{font-family:var(--mono);font-size:12px;color:var(--muted);}
+td.loc{font-weight:600;}
+td.ok{color:var(--green);}
+td.pending{color:var(--amber);}
+
+/* PAGINATION */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 0 0;}
+.page-info{font-size:12px;font-family:var(--mono);color:var(--muted);}
+.page-btns{display:flex;gap:6px;}
+.page-btn{
+  padding:6px 12px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:6px;color:var(--muted);font-family:var(--mono);font-size:12px;
+  cursor:pointer;transition:.2s;
+}
+.page-btn:hover,.page-btn.active{border-color:var(--amber);color:var(--amber);}
+.page-btn:disabled{opacity:.3;cursor:not-allowed;}
+
+/* COMPLIANCE BARS */
+.compliance-list{display:flex;flex-direction:column;gap:12px;}
+.comp-row .name{font-size:14px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;}
+.comp-row .name span{font-family:var(--mono);font-size:12px;color:var(--muted);}
+.bar-track{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+
+/* LOGIN OVERLAY */
+#loginOverlay{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:32px;width:340px;}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+@media(max-width:900px){
+  .two-col{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<div id="loginOverlay">
+  <div class="login-box">
+    <h2 style="font-size:20px;margin-bottom:4px;">🔒 HRD Login</h2>
+    <p style="font-size:13px;color:var(--muted);font-family:var(--mono);margin-bottom:24px;">Lotus Garden Hotel · Guard Patrol</p>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;display:block;margin-bottom:6px;">USERNAME</label>
+      <input id="hUser" type="text" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--font);font-size:15px;color:var(--text);outline:none;">
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;display:block;margin-bottom:6px;">PASSWORD</label>
+      <input id="hPass" type="password" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--font);font-size:15px;color:var(--text);outline:none;" onkeydown="if(event.key==='Enter')hrdLogin()">
+    </div>
+    <button onclick="hrdLogin()" style="width:100%;padding:12px;background:var(--amber);border:none;border-radius:8px;font-family:var(--font);font-size:16px;font-weight:700;color:#0d1117;cursor:pointer;">MASUK →</button>
+    <div id="hErr" style="display:none;font-size:12px;color:var(--red);font-family:var(--mono);margin-top:10px;text-align:center;"></div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="logo">LG <span>PATROL</span> · REKAP HRD</div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="font-size:12px;font-family:var(--mono);color:var(--muted);" id="hrdUser"></span>
+    <button onclick="hrdLogout()" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 12px;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--mono);">LOGOUT</button>
+  </div>
+</div>
+
+<div class="container">
+  <!-- FILTER -->
+  <div class="filter-card">
+    <div class="filter-row">
+      <div class="f-group">
+        <label>DARI TANGGAL</label>
+        <input type="date" id="fFrom">
+      </div>
+      <div class="f-group">
+        <label>SAMPAI TANGGAL</label>
+        <input type="date" id="fTo">
+      </div>
+      <div class="f-group">
+        <label>NAMA SATPAM</label>
+        <select id="fGuard">
+          <option value="">Semua Petugas</option>
+        </select>
+      </div>
+      <div class="f-group">
+        <label>SHIFT</label>
+        <select id="fShift">
+          <option value="">Semua Shift</option>
+          <option value="siang">Siang (06-18)</option>
+          <option value="malam">Malam (18-06)</option>
+        </select>
+      </div>
+      <div class="f-group">
+        <label>CHECKPOINT</label>
+        <select id="fCP">
+          <option value="">Semua Titik</option>
+        </select>
+      </div>
+      <button class="btn-filter" onclick="applyFilter()">🔍 TAMPILKAN</button>
+      <button class="btn-export" onclick="exportCSV()">⬇ EXPORT CSV</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card a"><div class="n" id="rTotal">0</div><div class="l">TOTAL SCAN</div></div>
+    <div class="stat-card g"><div class="n" id="rDays">0</div><div class="l">HARI PERIODE</div></div>
+    <div class="stat-card b"><div class="n" id="rGuards">0</div><div class="l">PETUGAS AKTIF</div></div>
+    <div class="stat-card r"><div class="n" id="rCompliance">0%</div><div class="l">KEPATUHAN</div></div>
+  </div>
+
+  <!-- TWO COL -->
+  <div class="two-col">
+    <!-- Chart -->
+    <div class="section">
+      <h3>📊 SCAN PER HARI</h3>
+      <canvas id="dailyChart" height="120"></canvas>
+    </div>
+    <!-- Compliance per guard -->
+    <div class="section">
+      <h3>👮 KEPATUHAN PER PETUGAS</h3>
+      <div class="compliance-list" id="compList"></div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="section" style="margin-bottom:24px;">
+    <h3>📋 LOG PATROLI DETAIL</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>WAKTU</th>
+            <th>TANGGAL</th>
+            <th>PETUGAS</th>
+            <th>NIK</th>
+            <th>CHECKPOINT</th>
+            <th>SHIFT</th>
+            <th>GPS</th>
+            <th>STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="logTable">
+          <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted);font-family:var(--mono);font-size:13px;">Pilih filter dan klik TAMPILKAN</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span class="page-info" id="pageInfo">Menampilkan 0 dari 0 data</span>
+      <div class="page-btns">
+        <button class="page-btn" id="btnPrev" onclick="changePage(-1)" disabled>← Prev</button>
+        <span id="pageNum" style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:6px 10px;">1</span>
+        <button class="page-btn" id="btnNext" onclick="changePage(1)" disabled>Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyRLSVbq-wQQTXoMpWGt1GIcTnrsM2xg1FeK4dbzjg_-gCrFgdfKFUNzkWgBKqiCQOn/exec";
+const PAGE_SIZE = 25;
+
+let allData    = [];
+let filtered   = [];
+let currentPage = 1;
+let dailyChart  = null;
+
+// ── Master data: dinamis dari Sheet (bukan hardcode) ──
+let guardsList      = []; // [{nik, nama}] dari Sheet Users
+let checkpointsList = []; // [{id, name}] dari Sheet Checkpoints
+
+async function loadMasterData() {
+  // Load Guards dari Sheet Users
+  try {
+    const r = await fetch(GAS_URL + "?action=guards", {cache:"no-store"});
+    const d = await r.json();
+    if (d.status === "ok" && d.guards.length) {
+      guardsList = d.guards; // [{nik, nama}]
+      localStorage.setItem("hrd_guards_cache", JSON.stringify(guardsList));
+    } else throw new Error("empty");
+  } catch {
+    const c = localStorage.getItem("hrd_guards_cache");
+    guardsList = c ? JSON.parse(c) : [];
+  }
+
+  // Load Checkpoints dari Sheet Checkpoints
+  try {
+    const r = await fetch(GAS_URL + "?action=checkpoints", {cache:"no-store"});
+    const d = await r.json();
+    if (d.status === "ok" && d.checkpoints.length) {
+      checkpointsList = d.checkpoints; // [{id, name, ...}]
+      localStorage.setItem("hrd_cp_cache", JSON.stringify(checkpointsList));
+    } else throw new Error("empty");
+  } catch {
+    const c = localStorage.getItem("hrd_cp_cache");
+    checkpointsList = c ? JSON.parse(c) : [];
+  }
+}
+
+// ── LOGIN ──
+async function hrdLogin() {
+  const u = document.getElementById("hUser").value.trim();
+  const p = document.getElementById("hPass").value;
+  if (!u || !p) return;
+  try {
+    const r = await fetch(GAS_URL + "?action=login&user="+encodeURIComponent(u)+"&pass="+encodeURIComponent(p)+"&role=hrd");
+    const d = await r.json();
+    if (d.status !== "ok") throw new Error();
+    localStorage.setItem("hrd_session", u);
+    initHRD(d.nama || u);
+  } catch {
+    if (u === "hrd" && p === "hrd123") { localStorage.setItem("hrd_session", u); initHRD("HRD Lotus Garden"); }
+    else { const e=document.getElementById("hErr"); e.style.display="block"; e.textContent="Username/password salah"; }
+  }
+}
+function hrdLogout() { localStorage.removeItem("hrd_session"); location.reload(); }
+
+async function initHRD(nama) {
+  document.getElementById("loginOverlay").style.display = "none";
+  document.getElementById("hrdUser").textContent = "👤 " + nama;
+
+  // Set default dates
+  const today = new Date().toISOString().split("T")[0];
+  const month = new Date(Date.now() - 30*86400000).toISOString().split("T")[0];
+  document.getElementById("fFrom").value = month;
+  document.getElementById("fTo").value   = today;
+
+  // Tampilkan loading di dropdown
+  const gSel = document.getElementById("fGuard");
+  const cSel = document.getElementById("fCP");
+  gSel.innerHTML = '<option value="">Memuat data…</option>';
+  cSel.innerHTML = '<option value="">Memuat data…</option>';
+
+  // Load guards & checkpoints dari GAS
+  await loadMasterData();
+
+  // Isi dropdown Guard dari Sheet Users
+  gSel.innerHTML = '<option value="">Semua Petugas</option>';
+  if (guardsList.length) {
+    guardsList.forEach(g => {
+      const o = document.createElement("option");
+      o.value       = g.nama;          // filter berdasarkan nama
+      o.textContent = g.nama + " (" + g.nik + ")";
+      gSel.appendChild(o);
+    });
+  } else {
+    gSel.innerHTML += '<option disabled>Tidak ada data (cek GAS)</option>';
+  }
+
+  // Isi dropdown Checkpoint dari Sheet Checkpoints
+  cSel.innerHTML = '<option value="">Semua Titik</option>';
+  if (checkpointsList.length) {
+    checkpointsList.forEach(c => {
+      const o = document.createElement("option");
+      o.value       = c.name;          // filter berdasarkan nama checkpoint
+      o.textContent = c.name + " (" + c.id + ")";
+      cSel.appendChild(o);
+    });
+  } else {
+    cSel.innerHTML += '<option disabled>Tidak ada data (cek GAS)</option>';
+  }
+
+  applyFilter();
+}
+
+// ── FETCH & FILTER ──
+async function applyFilter() {
+  const from  = document.getElementById("fFrom").value;
+  const to    = document.getElementById("fTo").value;
+  const guard = document.getElementById("fGuard").value;
+  const shift = document.getElementById("fShift").value;
+  const cp    = document.getElementById("fCP").value;
+
+  try {
+    const params = new URLSearchParams({ action:"report", from, to, guard, shift, cp });
+    const r = await fetch(GAS_URL + "?" + params);
+    const d = await r.json();
+    allData = d.logs || [];
+  } catch { allData = generateDemoData(from, to); }
+
+  filtered = allData.filter(row => {
+    if (guard && row.nama !== guard)       return false;
+    if (shift && row.shift !== shift)      return false;
+    if (cp    && row.checkpoint !== cp)    return false;
+    return true;
+  });
+  currentPage = 1;
+  renderAll();
+}
+
+function generateDemoData(from, to) {
+  // Gunakan data dari Sheet jika ada, fallback minimal
+  const guards = guardsList.length
+    ? guardsList.slice(0, 3).map(g => g.nama)
+    : ["Agus Santoso", "Budi Wijaya", "Candra Pratama"];
+  const cps = checkpointsList.length
+    ? checkpointsList.map(c => c.name)
+    : ["Lobi Utama", "Parkir Depan", "Restoran"];
+
+  const data  = [];
+  const fromD = new Date(from);
+  const toD   = new Date(to);
+  for (let d = new Date(fromD); d <= toD; d.setDate(d.getDate() + 1)) {
+    for (const g of guards) {
+      const scans = Math.floor(Math.random() * 8) + 3;
+      for (let i = 0; i < scans; i++) {
+        const h  = 6 + Math.floor(Math.random() * 12);
+        const m  = Math.floor(Math.random() * 60);
+        const cp = cps[Math.floor(Math.random() * cps.length)];
+        const gi = guards.indexOf(g);
+        data.push({
+          timestamp: new Date(d).setHours(h, m, 0, 0),
+          date:      d.toISOString().split("T")[0],
+          time:      (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m),
+          nama:      g,
+          nik:       "LG" + String(gi + 1).padStart(3, "0"),
+          checkpoint: cp,
+          shift:     h >= 6 && h < 18 ? "siang" : "malam",
+          gps:       "-7." + String(Math.floor(Math.random() * 9999)).padStart(4, "0") + ", 112." + String(Math.floor(Math.random() * 9999)).padStart(4, "0"),
+          status:    "ok"
+        });
+      }
+    }
+  }
+  return data.sort((a, b) => b.timestamp - a.timestamp);
+}
+
+function renderAll() {
+  renderStats();
+  renderChart();
+  renderCompliance();
+  renderTable();
+}
+
+function renderStats() {
+  document.getElementById("rTotal").textContent = filtered.length;
+  const from  = document.getElementById("fFrom").value;
+  const to    = document.getElementById("fTo").value;
+  const days  = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
+  const guards = new Set(filtered.map(r => r.nama)).size;
+  // Gunakan jumlah checkpoint dari Sheet, bukan hardcode
+  const cpCount = checkpointsList.length || 1;
+  const maxPossible = guards * cpCount * days;
+  const compliance  = maxPossible ? Math.min(100, Math.round(filtered.length / maxPossible * 100)) : 0;
+  document.getElementById("rDays").textContent       = days;
+  document.getElementById("rGuards").textContent     = guards;
+  document.getElementById("rCompliance").textContent = compliance + "%";
+}
+
+function renderChart() {
+  const byDay = {};
+  filtered.forEach(r => { byDay[r.date] = (byDay[r.date]||0)+1; });
+  const labels = Object.keys(byDay).sort();
+  const values = labels.map(l => byDay[l]);
+  if (dailyChart) dailyChart.destroy();
+  const ctx = document.getElementById("dailyChart").getContext("2d");
+  dailyChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels.map(l => l.slice(5)), // MM-DD
+      datasets: [{ label:"Jumlah Scan", data:values, backgroundColor:"rgba(240,165,0,.6)", borderColor:"var(--amber)", borderWidth:1, borderRadius:4 }]
+    },
+    options: {
+      responsive:true, plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:"#8b949e",font:{family:"JetBrains Mono",size:10}},grid:{color:"#21262d"}},
+        y:{ticks:{color:"#8b949e",font:{family:"JetBrains Mono",size:10}},grid:{color:"#21262d"},beginAtZero:true}
+      }
+    }
+  });
+}
+
+function renderCompliance() {
+  const byGuard = {};
+  filtered.forEach(r => { byGuard[r.nama] = (byGuard[r.nama]||0)+1; });
+  const max = Math.max(1, ...Object.values(byGuard));
+  const el = document.getElementById("compList");
+  el.innerHTML = Object.entries(byGuard).sort((a,b)=>b[1]-a[1]).map(([name,cnt]) => {
+    const pct = Math.round(cnt/max*100);
+    const col = pct >= 80 ? "var(--green)" : pct >= 50 ? "var(--amber)" : "var(--red)";
+    return `<div class="comp-row">
+      <div class="name">${name} <span>${cnt} scan</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col};"></div></div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:13px;font-family:var(--mono);">Tidak ada data</div>';
+}
+
+function renderTable() {
+  const start  = (currentPage-1)*PAGE_SIZE;
+  const end    = Math.min(start+PAGE_SIZE, filtered.length);
+  const page   = filtered.slice(start, end);
+  const tbody  = document.getElementById("logTable");
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted);font-family:var(--mono);font-size:13px;">Tidak ada data sesuai filter</td></tr>';
+    return;
+  }
+  tbody.innerHTML = page.map((r,i) => `
+    <tr>
+      <td class="mono">${start+i+1}</td>
+      <td class="mono">${r.time||"–"}</td>
+      <td class="mono">${r.date||"–"}</td>
+      <td style="font-weight:600;">${r.nama||"–"}</td>
+      <td class="mono">${r.nik||"–"}</td>
+      <td class="loc">${r.checkpoint||"–"}</td>
+      <td><span style="font-size:11px;font-family:var(--mono);padding:3px 8px;border-radius:4px;${r.shift==="siang"?"background:rgba(250,204,21,.1);color:#facc15":"background:rgba(129,140,248,.1);color:#818cf8"}">${r.shift==="siang"?"☀️ SIANG":"🌙 MALAM"}</span></td>
+      <td class="mono" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;">${r.gps||"–"}</td>
+      <td><span class="${r.status||'ok'}" style="font-size:11px;font-family:var(--mono);">${r.status==="ok"?"✓ OK":"⏳ Antrian"}</span></td>
+    </tr>`).join('');
+
+  document.getElementById("pageInfo").textContent = `Menampilkan ${start+1}–${end} dari ${filtered.length} data`;
+  document.getElementById("pageNum").textContent  = currentPage;
+  document.getElementById("btnPrev").disabled = currentPage <= 1;
+  document.getElementById("btnNext").disabled = end >= filtered.length;
+}
+
+function changePage(dir) {
+  currentPage += dir;
+  renderTable();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+// ── EXPORT CSV ──
+function exportCSV() {
+  const header = ["No","Tanggal","Waktu","Nama Petugas","NIK","Checkpoint","Shift","GPS","Status"];
+  const rows   = filtered.map((r,i) => [i+1,r.date,r.time,r.nama,r.nik,r.checkpoint,r.shift,r.gps,r.status]);
+  const csv    = [header, ...rows].map(r => r.map(c => `"${c||""}"`).join(",")).join("\n");
+  const blob   = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url    = URL.createObjectURL(blob);
+  const a      = document.createElement("a");
+  const from   = document.getElementById("fFrom").value;
+  const to     = document.getElementById("fTo").value;
+  a.href = url; a.download = `log_patroli_${from}_${to}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── INIT ──
+window.addEventListener("DOMContentLoaded", () => {
+  const sess = localStorage.getItem("hrd_session");
+  if (sess) initHRD("HRD Lotus Garden");
+});
+</script>
+
+<!-- ══════════ PWA: SERVICE WORKER + INSTALL PROMPT ══════════ -->
+<div id="pwaInstallBanner" style="
+  display:none; position:fixed; bottom:24px; right:24px;
+  background:#161b22; border:1px solid rgba(240,165,0,.4); border-radius:12px;
+  padding:12px 16px; max-width:300px;
+  box-shadow:0 8px 32px rgba(0,0,0,.6); z-index:9999;
+  align-items:center; gap:12px; font-family:'Rajdhani',sans-serif;">
+  <img src="icon-192.png" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
+  <div style="flex:1;">
+    <div style="font-weight:700;font-size:14px;color:#f0f6fc;">Install LG HRD Report</div>
+    <div style="font-size:12px;color:#8b949e;">Akses laporan patroli dari mana saja</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+    <button id="pwaInstallBtn" style="background:#f0a500;color:#0d1117;border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;">INSTALL</button>
+    <button onclick="document.getElementById('pwaInstallBanner').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:11px;cursor:pointer;">Nanti</button>
+  </div>
+</div>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js", { scope: "./" })
+      .then(reg => {
+        console.log("[PWA] SW registered:", reg.scope);
+        setInterval(() => reg.update(), 60000);
+      })
+      .catch(err => console.warn("[PWA] SW error:", err));
+  });
+}
+
+let deferredPrompt;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(() => {
+    const b = document.getElementById("pwaInstallBanner");
+    if (b) b.style.display = "flex";
+  }, 3000);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("pwaInstallBtn");
+  if (btn) {
+    btn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById("pwaInstallBanner").style.display = "none";
+    });
+  }
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredPrompt = null;
+  document.getElementById("pwaInstallBanner").style.display = "none";
+});
+</script>
+</body>
+</html>
