@@ -419,7 +419,7 @@ async function syncQueue() {
   let ok = 0;
   for (const item of q) {
     try {
-      const r = await fetch(GAS_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(item)});
+      const r = await fetch(GAS_URL, {method:"POST", headers:{"Content-Type":"text/plain"}, body:JSON.stringify(item)});
       if (r.ok) ok++;
     } catch {}
   }
@@ -770,7 +770,7 @@ async function submitPatroli() {
 
   if (navigator.onLine) {
     try {
-      const r = await fetch(GAS_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data) });
+      const r = await fetch(GAS_URL, { method:"POST", headers:{"Content-Type":"text/plain"}, body:JSON.stringify(data) });
       const d = await r.json();
       if (d.status === "success") { showToast("✓ Patroli Tercatat!"); }
       else showToast("⚠️ " + (d.message||"Error"));
