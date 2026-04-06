@@ -380,7 +380,13 @@ function autoIncrementId() {
 }
 
 // ── Init ──
-window.addEventListener("DOMContentLoaded", () => loadFromSheet());
+window.addEventListener("DOMContentLoaded", () => {
+  loadFromSheet();
+  // Live polling: refresh dari Sheets setiap 60 detik otomatis
+  setInterval(() => {
+    if (navigator.onLine) loadFromSheet();
+  }, 60000);
+});
 window.addEventListener("online", () => loadFromSheet());
 </script>
 </body>

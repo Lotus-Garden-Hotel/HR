@@ -419,7 +419,7 @@ async function syncQueue() {
   let ok = 0;
   for (const item of q) {
     try {
-      const r = await fetch(GAS_URL, {method:"POST", body:JSON.stringify(item)});
+      const r = await fetch(GAS_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(item)});
       if (r.ok) ok++;
     } catch {}
   }
@@ -581,7 +581,11 @@ async function loadTodayLogs() {
     const r = await fetch(GAS_URL + "?action=todayLogs&user=" + encodeURIComponent(currentUser.nik));
     const d = await r.json();
     if (d.logs) {
-      todayLogs = d.logs;
+      // Gunakan cpName (nama lokasi) untuk tampilan, bukan ID checkpoint mentah
+      todayLogs = d.logs.map(l => ({
+        ...l,
+        checkpoint: l.cpName || l.checkpoint
+      }));
       renderLogs();
       document.getElementById("statDone").textContent = todayLogs.length;
     }
@@ -610,6 +614,7 @@ function renderLogs() {
 function openScanner() {
   document.getElementById("scanModal").classList.remove("hidden");
   document.getElementById("scanZone").classList.add("active");
+  document.getElementById("scanStatus").textContent = "Memulai kamera…";
   startCamera();
 }
 function closeScanner() {
@@ -619,12 +624,31 @@ function closeScanner() {
 }
 async function startCamera() {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode:"environment", width:{ideal:640}, height:{ideal:480} }
-    });
+    // Preferensikan kamera belakang, fallback ke kamera manapun
+    const constraints = {
+      video: {
+        facingMode: { ideal: "environment" },
+        width:  { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    };
+    stream = await navigator.mediaDevices.getUserMedia(constraints).catch(() =>
+      navigator.mediaDevices.getUserMedia({ video: true })
+    );
     const vid = document.getElementById("qrVideo");
     vid.srcObject = stream;
-    vid.onloadedmetadata = () => { vid.play(); scanning=true; rafId=requestAnimationFrame(tick); };
+    // Tunggu canplay — lebih reliable dari loadedmetadata di Android/iOS
+    vid.addEventListener("canplay", function onCanPlay() {
+      vid.removeEventListener("canplay", onCanPlay);
+      vid.play().then(() => {
+        scanning = true;
+        document.getElementById("scanStatus").textContent = "Menunggu QR Code…";
+        rafId = requestAnimationFrame(tick);
+      }).catch(err => {
+        document.getElementById("scanStatus").textContent = "❌ Video tidak bisa dimulai: " + err.message;
+      });
+    }, { once: true });
+    vid.load();
   } catch (e) {
     document.getElementById("scanStatus").textContent = "❌ Kamera tidak bisa diakses: " + e.message;
   }
@@ -638,13 +662,19 @@ function tick() {
   if (!scanning) return;
   const vid    = document.getElementById("qrVideo");
   const canvas = document.getElementById("scanCanvas");
-  if (vid.readyState !== vid.HAVE_ENOUGH_DATA) { rafId=requestAnimationFrame(tick); return; }
-  canvas.width  = vid.videoWidth;
-  canvas.height = vid.videoHeight;
+  // Tunggu video benar-benar siap
+  if (vid.readyState < vid.HAVE_ENOUGH_DATA || vid.videoWidth === 0) {
+    rafId = requestAnimationFrame(tick); return;
+  }
+  // Scale canvas ke devicePixelRatio agar jsQR bisa detect di layar HDPI/Retina
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = vid.videoWidth  * dpr;
+  canvas.height = vid.videoHeight * dpr;
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(vid, 0, 0);
+  ctx.scale(dpr, dpr);
+  ctx.drawImage(vid, 0, 0, vid.videoWidth, vid.videoHeight);
   const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code = jsQR(img.data, img.width, img.height);
+  const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
   if (code) {
     scanning = false;
     stopCamera();
@@ -657,15 +687,30 @@ function tick() {
 
 // ── After QR Scanned ──
 function onQRScanned(raw) {
-  let checkpoint = raw;
-  try { const j = JSON.parse(raw); checkpoint = j.name || j.id || raw; } catch {}
+  // QR dari qr_generator.html mengandung JSON: {id, name, floor, interval}
+  // checkpoint = ID (kolom D di GAS), cpName = nama lokasi (kolom E di GAS)
+  let checkpointId = raw;
+  let checkpointName = raw;
+  try {
+    const j = JSON.parse(raw);
+    checkpointId   = j.id   || j.name || raw;  // ID checkpoint untuk GAS
+    checkpointName = j.name || j.id   || raw;  // Nama tampil untuk user
+  } catch {}
   const now   = new Date();
   const timeStr = now.toLocaleTimeString("id-ID", {hour:"2-digit",minute:"2-digit"});
-  document.getElementById("cf_loc").textContent  = checkpoint;
+  document.getElementById("cf_loc").textContent  = checkpointName;
   document.getElementById("cf_time").textContent = timeStr;
   document.getElementById("cf_user").textContent = currentUser.nama;
   document.getElementById("cf_gps").textContent  = "Mengambil GPS…";
-  pendingData = { checkpoint, timestamp: now.toISOString(), user: currentUser.nik, nama: currentUser.nama, shift: getShift() };
+  pendingData = {
+    checkpoint: checkpointId,       // ID ke GAS (kolom D)
+    cpName: checkpointName,         // Nama ke GAS (kolom E)
+    displayName: checkpointName,    // Untuk log lokal
+    timestamp: now.toISOString(),
+    user: currentUser.nik,
+    nama: currentUser.nama,
+    shift: getShift()
+  };
   document.getElementById("confirmModal").classList.remove("hidden");
   getGPS();
 }
@@ -703,9 +748,9 @@ async function submitPatroli() {
   const data = { ...pendingData };
   pendingData = null;
 
-  // Add to local log immediately
+  // Add to local log immediately — tampilkan nama lokasi bukan ID mentah
   todayLogs.unshift({
-    checkpoint: data.checkpoint,
+    checkpoint: data.displayName || data.cpName || data.checkpoint,
     time: new Date(data.timestamp).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}),
     gps: data.lat ? data.lat+","+data.lng : "N/A",
     shift: data.shift,
