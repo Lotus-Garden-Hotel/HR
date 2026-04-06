@@ -615,6 +615,8 @@ function openScanner() {
   document.getElementById("scanModal").classList.remove("hidden");
   document.getElementById("scanZone").classList.add("active");
   document.getElementById("scanStatus").textContent = "Memulai kamera…";
+  scanAttempts = 0;
+  lastScanTime = 0;
   startCamera();
 }
 function closeScanner() {
@@ -636,14 +638,23 @@ async function startCamera() {
     stream = stream_;
     const vid = document.getElementById("qrVideo");
     vid.srcObject = stream;
-    // JANGAN panggil vid.load() — itu reset stream di beberapa browser
-    // Gunakan event 'playing' yang paling reliable untuk mendeteksi video siap
+
+    // Multi-event fallback: 'playing' paling reliable tapi beberapa Android
+    // hanya trigger 'canplay' atau 'loadeddata' — tangkap ketiganya
+    let scanStarted = false;
     const startScan = () => {
+      if (scanStarted) return;
+      scanStarted = true;
       scanning = true;
       document.getElementById("scanStatus").textContent = "Menunggu QR Code…";
       if (!rafId) rafId = requestAnimationFrame(tick);
     };
-    vid.addEventListener("playing", startScan, { once: true });
+    vid.addEventListener("playing",    startScan, { once: true });
+    vid.addEventListener("canplay",    startScan, { once: true });
+    vid.addEventListener("loadeddata", startScan, { once: true });
+    // Fallback timeout — jika semua event gagal, mulai paksa setelah 1.5 detik
+    setTimeout(() => { if (!scanStarted && stream) startScan(); }, 1500);
+
     vid.play().catch(err => {
       document.getElementById("scanStatus").textContent = "❌ Video tidak bisa dimulai: " + err.message;
     });
@@ -656,8 +667,19 @@ function stopCamera() {
   if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
   if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
 }
-function tick() {
+// Throttle scan: cukup proses setiap 150ms (tidak perlu 60fps)
+let lastScanTime = 0;
+let scanAttempts = 0;
+
+function tick(now) {
   if (!scanning) return;
+
+  // Throttle — skip frame jika belum 150ms sejak scan terakhir
+  if (now - lastScanTime < 150) {
+    rafId = requestAnimationFrame(tick); return;
+  }
+  lastScanTime = now;
+
   const vid    = document.getElementById("qrVideo");
   const canvas = document.getElementById("scanCanvas");
 
@@ -666,8 +688,7 @@ function tick() {
     rafId = requestAnimationFrame(tick); return;
   }
 
-  // Gambar langsung dengan resolusi asli video — TANPA DPR scaling
-  // jsQR butuh pixel 1:1, bukan scaled display pixel
+  // Gambar dengan resolusi asli video (jsQR butuh pixel 1:1)
   const w = vid.videoWidth;
   const h = vid.videoHeight;
   if (canvas.width !== w || canvas.height !== h) {
@@ -675,21 +696,25 @@ function tick() {
     canvas.height = h;
   }
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  // Reset transform setiap frame (ctx.scale() bersifat kumulatif jika tidak direset)
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.drawImage(vid, 0, 0, w, h);
 
-  // getImageData harus sesuai canvas.width/height yang sudah benar
   const img  = ctx.getImageData(0, 0, w, h);
   const code = jsQR(img.data, img.width, img.height, {
-    inversionAttempts: "attemptBoth"   // coba normal + inverted agar lebih reliable
+    inversionAttempts: "attemptBoth"
   });
+
   if (code && code.data) {
     scanning = false;
     stopCamera();
     closeScanner();
     onQRScanned(code.data);
   } else {
+    // Update counter agar user tahu scan aktif berjalan
+    scanAttempts++;
+    if (scanAttempts % 5 === 0) {
+      document.getElementById("scanStatus").textContent = "Menunggu QR Code… (" + scanAttempts + " frame)";
+    }
     rafId = requestAnimationFrame(tick);
   }
 }
