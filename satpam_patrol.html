@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root {
   --bg:      #0d1117;
@@ -199,7 +199,7 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:va
   padding:12px 20px; font-family:var(--mono); font-size:13px;
   color:var(--muted); text-align:center;
 }
-#scanCanvas { display:none; }
+#qr-reader { width:100%; max-width:480px; } #qr-reader video { border-radius:8px; } #qr-reader img { display:none!important; }
 
 /* ── CONFIRM MODAL ── */
 #confirmModal {
@@ -323,13 +323,9 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:va
     <button class="btn-close" onclick="closeScanner()">✕ Tutup</button>
   </div>
   <div id="videoWrap">
-    <video id="qrVideo" autoplay playsinline muted></video>
-    <div class="scan-overlay">
-      <div class="scan-frame"></div>
-    </div>
-    <canvas id="scanCanvas"></canvas>
+    <div id="qr-reader"></div>
   </div>
-  <div class="scan-status" id="scanStatus">Menunggu QR Code…</div>
+  <div class="scan-status" id="scanStatus">Memulai kamera…</div>
 </div>
 
 <!-- ════════════════ CONFIRM MODAL ════════════════ -->
@@ -358,12 +354,11 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:va
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyRLSVbq-wQQTXoMpWGt1GIcTnrsM2xg1FeK4dbzjg_-gCrFgdfKFUNzkWgBKqiCQOn/exec";
 
 // ── State ──
-let currentUser = null;
-let pendingData = null;
-let todayLogs   = [];
-let stream      = null;
-let scanning    = false;
-let rafId       = null;
+let currentUser   = null;
+let pendingData   = null;
+let todayLogs     = [];
+let html5Scanner  = null;   // html5-qrcode instance
+let cpCache       = {};     // { CP01: {id,name,floor}, ... }
 
 // ── IndexedDB ──
 let db;
@@ -610,138 +605,90 @@ function renderLogs() {
   `).join('');
 }
 
-// ── QR Scanner ──
+// ── QR Scanner (html5-qrcode) ──
 function openScanner() {
   document.getElementById("scanModal").classList.remove("hidden");
   document.getElementById("scanZone").classList.add("active");
   document.getElementById("scanStatus").textContent = "Memulai kamera…";
-  startCamera();
+  startHtml5Scanner();
 }
+
 function closeScanner() {
   document.getElementById("scanModal").classList.add("hidden");
   document.getElementById("scanZone").classList.remove("active");
-  stopCamera();
+  stopHtml5Scanner();
 }
-async function startCamera() {
+
+async function startHtml5Scanner() {
+  // Bersihkan instance lama jika ada
+  await stopHtml5Scanner();
+
+  // Bersihkan container
+  const container = document.getElementById("qr-reader");
+  container.innerHTML = "";
+
   try {
-    let stream_;
-    try {
-      // Minta resolusi sederhana — tidak perlu 4K untuk scan QR
-      stream_ = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal:"environment" }, width:{ideal:640}, height:{ideal:480} }
-      });
-    } catch {
-      stream_ = await navigator.mediaDevices.getUserMedia({ video: true });
-    }
-    stream = stream_;
-    const vid = document.getElementById("qrVideo");
-    vid.srcObject = stream;
+    html5Scanner = new Html5Qrcode("qr-reader");
 
-    // Multi-event fallback — berbagai Android Chrome trigger event berbeda
-    let scanStarted = false;
-    const startScan = () => {
-      if (scanStarted) return;
-      scanStarted = true;
-      scanning = true;
-      scanAttempts = 0; lastScanTime = 0;
-      document.getElementById("scanStatus").textContent = "Menunggu QR Code…";
-      if (!rafId) rafId = requestAnimationFrame(tick);
+    const config = {
+      fps: 10,                    // 10 frame/detik — cukup, hemat baterai
+      qrbox: { width: 250, height: 250 },  // area scan di tengah frame
+      aspectRatio: 1.0,           // square — paling stabil di mobile
+      disableFlip: false          // coba mirror juga
     };
-    vid.addEventListener("playing",    startScan, { once: true });
-    vid.addEventListener("canplay",    startScan, { once: true });
-    vid.addEventListener("loadeddata", startScan, { once: true });
-    // Paksa mulai setelah 1.5 detik jika semua event tidak trigger
-    setTimeout(() => { if (!scanStarted && stream) startScan(); }, 1500);
 
-    vid.play().catch(err => {
-      document.getElementById("scanStatus").textContent = "❌ Video tidak bisa dimulai: " + err.message;
-    });
-  } catch (e) {
-    document.getElementById("scanStatus").textContent = "❌ Kamera tidak bisa diakses: " + e.message;
-  }
-}
-function stopCamera() {
-  scanning = false;
-  if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
-  if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
-}
-// ── Scan throttle & state vars ──
-let lastScanTime = 0;
-let scanAttempts = 0;
+    await html5Scanner.start(
+      { facingMode: "environment" },   // kamera belakang
+      config,
+      (decodedText) => {
+        // ✅ QR berhasil dibaca
+        stopHtml5Scanner();
+        closeScanner();
+        onQRScanned(decodedText);
+      },
+      (errorMsg) => {
+        // Scan sedang berjalan tapi belum dapat QR — update status
+        document.getElementById("scanStatus").textContent = "🔍 Arahkan ke QR Code…";
+      }
+    );
 
-/**
- * Boost kontras pixel secara manual — ctx.filter tidak reliable di Android.
- * Factor 1.5 = cukup untuk kondisi ruangan redup.
- */
-function boostContrast(imageData) {
-  const d = imageData.data;
-  const factor = 1.5;
-  const intercept = 128 * (1 - factor);
-  for (let i = 0; i < d.length; i += 4) {
-    d[i]     = Math.min(255, Math.max(0, d[i]     * factor + intercept)); // R
-    d[i + 1] = Math.min(255, Math.max(0, d[i + 1] * factor + intercept)); // G
-    d[i + 2] = Math.min(255, Math.max(0, d[i + 2] * factor + intercept)); // B
-  }
-  return imageData;
-}
+    document.getElementById("scanStatus").textContent = "🔍 Arahkan ke QR Code…";
 
-function tick(now) {
-  if (!scanning) return;
-
-  // Throttle: scan setiap 250ms — cukup cepat, hemat CPU
-  if (now - lastScanTime < 250) { rafId = requestAnimationFrame(tick); return; }
-  lastScanTime = now;
-
-  const vid    = document.getElementById("qrVideo");
-  const canvas = document.getElementById("scanCanvas");
-
-  if (vid.readyState < vid.HAVE_ENOUGH_DATA || vid.videoWidth === 0 || vid.paused) {
-    rafId = requestAnimationFrame(tick); return;
-  }
-
-  // ── KUNCI: Downscale ke max 640px ──
-  // Kamera HP aslinya 1280×720 atau lebih besar.
-  // jsQR bekerja LEBIH BAIK pada resolusi kecil (QR relatif lebih besar di frame).
-  const MAX_W = 640;
-  const scale = Math.min(1, MAX_W / vid.videoWidth);
-  const w = Math.round(vid.videoWidth  * scale);
-  const h = Math.round(vid.videoHeight * scale);
-
-  if (canvas.width !== w || canvas.height !== h) {
-    canvas.width  = w;
-    canvas.height = h;
-  }
-
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.drawImage(vid, 0, 0, w, h);   // drawImage otomatis downscale
-
-  // ── Boost kontras manual (lebih reliable dari ctx.filter di Android) ──
-  let imgData = ctx.getImageData(0, 0, w, h);
-  imgData = boostContrast(imgData);
-
-  const code = jsQR(imgData.data, imgData.width, imgData.height, {
-    inversionAttempts: "attemptBoth"
-  });
-
-  if (code && code.data) {
-    scanning = false;
-    stopCamera();
-    closeScanner();
-    onQRScanned(code.data);
-  } else {
-    scanAttempts++;
-    // Update status tiap 8 scan agar user tahu scanner aktif
-    if (scanAttempts % 8 === 0) {
-      document.getElementById("scanStatus").textContent =
-        "Menunggu QR Code… (" + scanAttempts + "× scan)";
+  } catch (err) {
+    // Fallback: coba kamera apapun (depan/belakang)
+    try {
+      html5Scanner = new Html5Qrcode("qr-reader");
+      await html5Scanner.start(
+        { facingMode: "user" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => { stopHtml5Scanner(); closeScanner(); onQRScanned(decodedText); },
+        () => {}
+      );
+      document.getElementById("scanStatus").textContent = "🔍 Arahkan ke QR Code…";
+    } catch (err2) {
+      document.getElementById("scanStatus").textContent = "❌ Kamera tidak bisa diakses: " + err2.message;
     }
-    rafId = requestAnimationFrame(tick);
   }
 }
 
-// ── Checkpoint cache (diisi saat login) ──
-let cpCache = {};
+async function stopHtml5Scanner() {
+  if (html5Scanner) {
+    try {
+      const state = html5Scanner.getState();
+      // State 2 = SCANNING, State 3 = PAUSED
+      if (state === 2 || state === 3) {
+        await html5Scanner.stop();
+      }
+    } catch {}
+    try { html5Scanner.clear(); } catch {}
+    html5Scanner = null;
+  }
+  // Bersihkan container agar tidak ada elemen sisa
+  const container = document.getElementById("qr-reader");
+  if (container) container.innerHTML = "";
+}
+
+// ── Load checkpoint cache dari GAS/localStorage ──
 async function loadCheckpointsCache() {
   try {
     const local = localStorage.getItem("checkpoints_cache");
@@ -762,15 +709,15 @@ async function loadCheckpointsCache() {
 
 // ── After QR Scanned ──
 function onQRScanned(raw) {
-  // QR baru: plain ID ("CP01")  |  QR lama: JSON string
   let checkpointId   = raw.trim();
   let checkpointName = raw.trim();
   try {
+    // QR lama: JSON string {"id":"CP01","name":"..."}
     const j = JSON.parse(raw);
     checkpointId   = j.id   || j.name || raw;
     checkpointName = j.name || j.id   || raw;
   } catch {
-    // Plain ID — lookup nama dari cache
+    // QR baru: plain ID ("CP01") → lookup nama dari cache
     if (cpCache[checkpointId]) {
       checkpointName = cpCache[checkpointId].name || checkpointId;
     }
