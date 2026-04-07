@@ -2,923 +2,392 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0d1117">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="LG Patrol">
-<meta name="application-name" content="LG Patrol">
-<meta name="description" content="Aplikasi patroli satpam Lotus Garden Hotel Kediri">
-<title>Guard Patrol · Lotus Garden</title>
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Generator · Guard Patrol · Lotus Garden</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-:root {
-  --bg:      #0d1117;
-  --bg2:     #161b22;
-  --bg3:     #21262d;
-  --border:  #30363d;
-  --amber:   #f0a500;
-  --amber2:  #fbbf24;
-  --green:   #22c55e;
-  --red:     #ef4444;
-  --blue:    #3b82f6;
-  --text:    #f0f6fc;
-  --muted:   #8b949e;
-  --font:    'Rajdhani', sans-serif;
-  --mono:    'JetBrains Mono', monospace;
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+  --amber:#f0a500;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;
+  --text:#f0f6fc;--muted:#8b949e;
+  --font:'Rajdhani',sans-serif;--mono:'JetBrains Mono',monospace;
 }
-* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html,body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font); overflow:hidden; }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:var(--bg2);border-bottom:1px solid var(--border);}
+.logo{font-size:18px;font-weight:700;letter-spacing:.05em;}
+.logo span{color:var(--amber);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
 
-/* ── SCREENS ── */
-.screen { position:absolute; inset:0; display:flex; flex-direction:column; transition:opacity .3s,transform .3s; }
-.screen.hidden { opacity:0; pointer-events:none; transform:translateY(20px); }
+/* SYNC BAR */
+#syncBar{
+  display:flex;align-items:center;gap:10px;padding:8px 24px;
+  font-size:12px;font-family:var(--mono);border-bottom:1px solid var(--border);transition:background .3s;
+}
+#syncBar.synced {background:rgba(34,197,94,.08);color:var(--green);}
+#syncBar.syncing{background:rgba(59,130,246,.08);color:var(--blue);}
+#syncBar.error  {background:rgba(239,68,68,.08); color:var(--red);}
+#syncBar.offline{background:rgba(240,165,0,.08); color:var(--amber);}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.synced  .sync-dot{background:var(--green);animation:pulse 2s infinite;}
+.syncing .sync-dot{background:var(--blue); animation:blink .6s infinite;}
+.error   .sync-dot{background:var(--red);}
+.offline .sync-dot{background:var(--amber);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+#syncDetail{margin-left:auto;font-size:11px;color:var(--muted);}
 
-/* ── LOGIN ── */
-#loginScreen {
-  justify-content:center; align-items:center; padding:32px 24px;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, #1a2236 0%, #0d1117 70%);
-}
-.login-logo { text-align:center; margin-bottom:40px; }
-.login-logo .badge {
-  display:inline-flex; align-items:center; gap:8px;
-  background:rgba(240,165,0,.12); border:1px solid rgba(240,165,0,.3);
-  border-radius:8px; padding:8px 16px; margin-bottom:16px;
-}
-.login-logo .badge span { font-size:11px; font-family:var(--mono); color:var(--amber); letter-spacing:.1em; }
-.login-logo h1 { font-size:28px; font-weight:700; letter-spacing:.05em; }
-.login-logo p { font-size:13px; color:var(--muted); font-family:var(--mono); margin-top:4px; }
+.container{max-width:1100px;margin:0 auto;padding:24px;display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start;}
 
-.login-card {
-  width:100%; max-width:360px;
-  background:var(--bg2); border:1px solid var(--border);
-  border-radius:12px; padding:28px 24px;
-  box-shadow: 0 0 40px rgba(240,165,0,.05);
-}
-.field { margin-bottom:18px; }
-.field label { display:block; font-size:12px; font-family:var(--mono); color:var(--muted); letter-spacing:.08em; margin-bottom:8px; }
-.field input {
-  width:100%; background:var(--bg3); border:1px solid var(--border);
-  border-radius:8px; padding:12px 14px; font-family:var(--font); font-size:16px;
-  color:var(--text); outline:none; transition:border .2s;
-}
-.field input:focus { border-color:var(--amber); }
-.btn-login {
-  width:100%; padding:14px; border:none; border-radius:8px;
-  background:var(--amber); color:#0d1117; font-family:var(--font);
-  font-size:17px; font-weight:700; letter-spacing:.05em; cursor:pointer;
-  transition:background .2s, transform .1s;
-}
-.btn-login:active { transform:scale(.98); }
-.btn-login:hover { background:var(--amber2); }
-.login-err { display:none; font-size:13px; color:var(--red); font-family:var(--mono); margin-top:12px; text-align:center; }
+/* FORM */
+.form-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;position:sticky;top:20px;}
+.form-card h2{font-size:15px;letter-spacing:.06em;color:var(--muted);margin-bottom:18px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;margin-bottom:6px;}
+.field input,.field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--font);font-size:15px;color:var(--text);outline:none;transition:border .2s;}
+.field input:focus,.field select:focus{border-color:var(--amber);}
+.field select option{background:var(--bg3);}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-family:var(--font);font-size:16px;font-weight:700;cursor:pointer;transition:.2s;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-add{background:var(--amber);color:#0d1117;}
+.btn-add:hover:not(:disabled){filter:brightness(1.1);}
+.btn-batch{background:var(--bg3);border:1px solid var(--border);color:var(--muted);}
+.btn-batch:hover:not(:disabled){border-color:var(--green);color:var(--green);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover:not(:disabled){filter:brightness(1.1);}
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
-/* ── TOP BAR ── */
-.topbar {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:12px 16px; background:var(--bg2); border-bottom:1px solid var(--border);
-  flex-shrink:0; min-height:56px;
-}
-.topbar .logo { font-size:16px; font-weight:700; letter-spacing:.05em; }
-.topbar .logo span { color:var(--amber); }
-.user-badge {
-  display:flex; align-items:center; gap:8px;
-  font-size:13px; font-family:var(--mono); color:var(--muted);
-}
-.user-badge .dot { width:8px; height:8px; background:var(--green); border-radius:50%; animation:pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+/* TABLE */
+.checkpoint-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;}
+.checkpoint-table th{font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.08em;padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);}
+.checkpoint-table td{padding:8px;border-bottom:1px solid rgba(48,54,61,.5);vertical-align:middle;}
+.checkpoint-table tr:hover{background:var(--bg3);}
+.btn-del{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:4px;color:var(--red);padding:3px 8px;cursor:pointer;font-size:12px;}
+.btn-del:disabled{opacity:.4;cursor:not-allowed;}
+.sync-icon{font-size:12px;}
+.sync-icon.ok{color:var(--green);}
+.sync-icon.pending{color:var(--amber);}
 
-/* ── STATUS BAR ── */
-.statusbar {
-  display:flex; gap:8px; padding:10px 16px;
-  background:var(--bg); border-bottom:1px solid var(--border); flex-shrink:0;
-}
-.stat-chip {
-  flex:1; background:var(--bg2); border:1px solid var(--border);
-  border-radius:8px; padding:8px 10px; text-align:center;
-}
-.stat-chip .val { font-size:20px; font-weight:700; color:var(--amber); font-family:var(--mono); }
-.stat-chip .lbl { font-size:10px; color:var(--muted); letter-spacing:.05em; margin-top:2px; }
+/* QR PREVIEW */
+.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
+.qr-card{background:#fff;border-radius:12px;padding:16px;text-align:center;transition:transform .2s,box-shadow .2s;box-shadow:0 2px 10px rgba(0,0,0,.3);position:relative;}
+.qr-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.4);}
+.qr-card .hotel-name{font-size:9px;letter-spacing:.1em;color:#666;margin-bottom:8px;font-family:var(--font);}
+.qr-card .hotel-name span{color:var(--amber);}
+.qr-card .qr-box{display:flex;justify-content:center;margin-bottom:10px;}
+.qr-card .cp-name{font-size:16px;font-weight:700;color:#111;letter-spacing:.03em;font-family:var(--font);}
+.qr-card .cp-id{font-size:10px;color:#999;font-family:var(--mono);margin-top:4px;}
+.qr-card .cp-floor{font-size:11px;color:#555;margin-top:2px;}
+.sheet-badge{position:absolute;top:8px;right:8px;font-size:9px;font-family:var(--mono);padding:2px 6px;border-radius:4px;}
+.sheet-badge.synced{background:rgba(34,197,94,.15);color:#22c55e;}
+.sheet-badge.pending{background:rgba(240,165,0,.15);color:#f0a500;}
+.empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);font-family:var(--mono);font-size:13px;}
 
-/* ── MAIN CONTENT ── */
-#mainScreen { background:var(--bg); }
-.scroll-area { flex:1; overflow-y:auto; padding:16px; }
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(0,0,0,.2);border-top-color:#0d1117;border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── SCAN BUTTON ── */
-.scan-zone {
-  background:var(--bg2); border:2px dashed var(--border); border-radius:16px;
-  padding:28px 16px; text-align:center; margin-bottom:16px;
-  transition:border-color .2s;
+@media print{
+  body{background:#fff!important;}
+  .topbar,#syncBar,.form-card,.no-print{display:none!important;}
+  .container{display:block;padding:0;}
+  .preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10mm;padding:10mm;}
+  .qr-card{border:1px solid #ddd;break-inside:avoid;box-shadow:none;}
+  .qr-card:hover{transform:none;}
+  .sheet-badge{display:none;}
 }
-.scan-zone.active { border-color:var(--amber); }
-.btn-scan {
-  display:inline-flex; align-items:center; gap:10px;
-  background:var(--amber); color:#0d1117; border:none;
-  border-radius:10px; padding:14px 28px; font-family:var(--font);
-  font-size:18px; font-weight:700; letter-spacing:.05em; cursor:pointer;
-  transition:background .2s, transform .1s; box-shadow:0 4px 20px rgba(240,165,0,.3);
-}
-.btn-scan:active { transform:scale(.97); }
-.scan-hint { font-size:12px; color:var(--muted); font-family:var(--mono); margin-top:10px; }
-
-/* ── OFFLINE BANNER ── */
-.offline-banner {
-  display:none; align-items:center; gap:8px;
-  background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3);
-  border-radius:8px; padding:10px 12px; margin-bottom:12px;
-  font-size:13px; font-family:var(--mono); color:var(--red);
-}
-.offline-banner.show { display:flex; }
-.offline-banner .queue-count { margin-left:auto; background:var(--red); color:#fff; border-radius:4px; padding:2px 8px; font-size:11px; }
-
-/* ── LOG LIST ── */
-.section-hdr { font-size:12px; font-family:var(--mono); color:var(--muted); letter-spacing:.1em; margin-bottom:10px; }
-.log-list { display:flex; flex-direction:column; gap:8px; }
-.log-item {
-  background:var(--bg2); border:1px solid var(--border);
-  border-radius:10px; padding:12px 14px;
-  display:flex; align-items:center; gap:12px;
-  animation:slideIn .3s ease;
-}
-@keyframes slideIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:none} }
-.log-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-.log-dot.ok { background:var(--green); box-shadow:0 0 8px var(--green); }
-.log-dot.pending { background:var(--amber); box-shadow:0 0 8px var(--amber); }
-.log-info { flex:1; }
-.log-info .loc { font-size:15px; font-weight:600; }
-.log-info .meta { font-size:11px; font-family:var(--mono); color:var(--muted); margin-top:2px; }
-.log-time { font-family:var(--mono); font-size:13px; color:var(--amber); }
-
-/* ── SHIFT BADGE ── */
-.shift-badge {
-  display:inline-flex; align-items:center; gap:6px;
-  font-size:12px; font-family:var(--mono); padding:4px 10px;
-  border-radius:20px; border:1px solid; margin-bottom:12px;
-}
-.shift-badge.siang { color:#facc15; border-color:rgba(250,204,21,.3); background:rgba(250,204,21,.08); }
-.shift-badge.malam { color:#818cf8; border-color:rgba(129,140,248,.3); background:rgba(129,140,248,.08); }
-
-/* ── QR MODAL ── */
-#scanModal {
-  position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:100;
-  display:flex; flex-direction:column; align-items:center;
-}
-#scanModal.hidden { display:none; }
-.modal-header {
-  width:100%; display:flex; align-items:center; justify-content:space-between;
-  padding:16px 20px; background:var(--bg2);
-}
-.modal-header h2 { font-size:18px; font-weight:700; }
-.btn-close {
-  background:var(--bg3); border:1px solid var(--border); border-radius:8px;
-  padding:8px 14px; color:var(--text); font-family:var(--font); font-size:14px;
-  cursor:pointer;
-}
-#videoWrap { position:relative; width:100%; max-width:480px; flex:1; display:flex; align-items:center; justify-content:center; }
-#qrVideo { width:100%; max-height:70vh; object-fit:cover; }
-.scan-overlay {
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  pointer-events:none;
-}
-.scan-frame {
-  width:220px; height:220px; border:2px solid var(--amber);
-  border-radius:12px; position:relative;
-  box-shadow: 0 0 0 9999px rgba(0,0,0,.5);
-}
-.scan-frame::before {
-  content:''; position:absolute; top:0; left:0; right:0;
-  height:2px; background:var(--amber); animation:scanline 2s ease-in-out infinite;
-}
-@keyframes scanline { 0%{top:0} 50%{top:calc(100% - 2px)} 100%{top:0} }
-.scan-status {
-  padding:12px 20px; font-family:var(--mono); font-size:13px;
-  color:var(--muted); text-align:center;
-}
-#scanCanvas { display:none; }
-
-/* ── CONFIRM MODAL ── */
-#confirmModal {
-  position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:200;
-  display:flex; align-items:flex-end; justify-content:center;
-}
-#confirmModal.hidden { display:none; }
-.confirm-card {
-  width:100%; max-width:480px; background:var(--bg2);
-  border-radius:20px 20px 0 0; border-top:1px solid var(--border);
-  padding:24px 24px 36px; animation:slideUp .3s ease;
-}
-@keyframes slideUp { from{transform:translateY(100%)} to{transform:none} }
-.confirm-card h3 { font-size:20px; font-weight:700; margin-bottom:4px; }
-.confirm-card .sub { font-size:13px; color:var(--muted); font-family:var(--mono); margin-bottom:20px; }
-.confirm-row { display:flex; justify-content:space-between; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--border); }
-.confirm-row:last-of-type { border:none; }
-.confirm-row .k { font-size:13px; color:var(--muted); }
-.confirm-row .v { font-size:14px; font-weight:600; font-family:var(--mono); color:var(--amber); }
-.confirm-btns { display:flex; gap:10px; margin-top:16px; }
-.btn-confirm {
-  flex:1; padding:14px; border:none; border-radius:10px;
-  font-family:var(--font); font-size:16px; font-weight:700; cursor:pointer; transition:.15s;
-}
-.btn-confirm.yes { background:var(--green); color:#fff; }
-.btn-confirm.no { background:var(--bg3); border:1px solid var(--border); color:var(--muted); }
-
-/* ── SUCCESS TOAST ── */
-#toast {
-  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
-  background:var(--green); color:#fff; border-radius:10px;
-  padding:12px 24px; font-weight:700; font-size:15px;
-  transition:transform .3s; z-index:300; white-space:nowrap;
-}
-#toast.show { transform:translateX(-50%) translateY(0); }
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+@media(max-width:900px){.container{grid-template-columns:1fr;}.form-card{position:static;}}
 </style>
 </head>
 <body>
 
-<!-- ════════════════ LOGIN SCREEN ════════════════ -->
-<div class="screen" id="loginScreen">
-  <div class="login-logo">
-    <div class="badge"><span>🔒 LOTUS GARDEN HOTEL</span></div>
-    <h1>GUARD <span style="color:var(--amber)">PATROL</span></h1>
-    <p>Security Management System v1.0</p>
+<div class="topbar no-print">
+  <div class="logo">LG <span>PATROL</span> · QR GENERATOR</div>
+  <div class="topbar-right">
+    <button onclick="loadFromSheet()" id="btnReload" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 14px;color:var(--muted);font-family:var(--mono);font-size:12px;cursor:pointer;">↻ Reload Sheet</button>
+    <button onclick="window.print()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 16px;color:var(--text);font-family:var(--font);font-size:14px;cursor:pointer;">🖨️ Print Semua</button>
   </div>
-  <div class="login-card">
+</div>
+
+<div id="syncBar" class="offline no-print">
+  <div class="sync-dot"></div>
+  <span id="syncMsg">Menghubungkan ke Google Sheets…</span>
+  <span id="syncDetail"></span>
+</div>
+
+<div class="container">
+  <div class="form-card no-print">
+    <h2>➕ TAMBAH CHECKPOINT</h2>
+    <div class="field"><label>ID CHECKPOINT</label><input type="text" id="cpId" placeholder="CP01" maxlength="10"></div>
+    <div class="field"><label>NAMA LOKASI</label><input type="text" id="cpName" placeholder="Lobi Utama"></div>
+    <div class="field"><label>LANTAI / AREA</label><input type="text" id="cpFloor" placeholder="Lantai 1 · Area Depan"></div>
     <div class="field">
-      <label>NIK / USERNAME</label>
-      <input type="text" id="inUser" placeholder="Masukkan NIK kamu" autocomplete="username">
+      <label>INTERVAL PATROLI</label>
+      <select id="cpInterval">
+        <option value="30">30 menit</option>
+        <option value="45">45 menit</option>
+        <option value="60" selected>60 menit</option>
+        <option value="90">90 menit</option>
+        <option value="120">2 jam</option>
+      </select>
     </div>
-    <div class="field">
-      <label>PASSWORD</label>
-      <input type="password" id="inPass" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn btn-add" id="btnAdd" onclick="addCheckpoint()">+ GENERATE QR</button>
+    <hr class="divider">
+    <h2 style="margin-bottom:10px;">📋 TEMPLATE BATCH</h2>
+    <button class="btn btn-batch" id="btnDefault" onclick="loadDefaultCheckpoints()">🏨 Load Default Hotel</button>
+    <button class="btn btn-green" onclick="window.print()" style="margin-top:4px;">🖨️ PRINT SEMUA</button>
+    <hr class="divider">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h2>📌 DAFTAR CHECKPOINT</h2>
+      <button onclick="clearAll()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:5px;padding:3px 10px;color:var(--red);font-size:11px;cursor:pointer;font-family:var(--mono);">Hapus Semua</button>
     </div>
-    <button class="btn-login" onclick="doLogin()">MASUK →</button>
-    <div class="login-err" id="loginErr">Username atau password salah</div>
-    <div id="savedHint" style="display:none;margin-top:14px;text-align:center;">
-      <span style="font-size:12px;color:var(--muted);font-family:var(--mono);">Masuk sebagai </span>
-      <span id="savedName" style="font-size:13px;color:var(--amber);font-weight:700;font-family:var(--mono);"></span>
-      <br>
-      <button onclick="clearSavedCreds()" style="margin-top:8px;background:none;border:none;color:var(--muted);font-size:11px;font-family:var(--mono);cursor:pointer;text-decoration:underline;">Ganti Akun</button>
-    </div>
-  </div><!-- /login-card -->
-</div><!-- /loginScreen -->
-
-<!-- ════════════════ MAIN SCREEN ════════════════ -->
-<div class="screen hidden" id="mainScreen">
-  <div class="topbar">
-    <div class="logo">LG <span>PATROL</span></div>
-    <div class="user-badge">
-      <div class="dot"></div>
-      <span id="topbarUser">-</span>
-      <button onclick="doLogout()" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--mono);">LOGOUT</button>
-    </div>
+    <table class="checkpoint-table">
+      <thead><tr><th>ID</th><th>Nama</th><th>Int.</th><th>Sheet</th><th></th></tr></thead>
+      <tbody id="cpTbody"><tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);font-family:var(--mono);font-size:12px;">Memuat…</td></tr></tbody>
+    </table>
   </div>
 
-  <div class="statusbar">
-    <div class="stat-chip">
-      <div class="val" id="statDone">0</div>
-      <div class="lbl">SELESAI</div>
+  <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;" class="no-print">
+      <span style="font-size:13px;font-family:var(--mono);color:var(--muted);" id="cpCountLabel">0 checkpoint</span>
+      <span style="font-size:11px;font-family:var(--mono);color:var(--muted);" id="sheetCount"></span>
     </div>
-    <div class="stat-chip">
-      <div class="val" id="statTotal">-</div>
-      <div class="lbl">CHECKPOINT</div>
-    </div>
-    <div class="stat-chip">
-      <div class="val" id="statQueue" style="color:var(--amber)">0</div>
-      <div class="lbl">ANTRIAN</div>
-    </div>
-  </div>
-
-  <div class="scroll-area">
-    <div id="shiftBadge" class="shift-badge siang">☀️ &nbsp;SHIFT SIANG · 06:00 – 18:00</div>
-
-    <div id="offlineBanner" class="offline-banner">
-      <span>📡 Offline — data tersimpan lokal</span>
-      <span class="queue-count" id="queueCount">0</span>
-    </div>
-
-    <div class="scan-zone" id="scanZone">
-      <button class="btn-scan" onclick="openScanner()">
-        <span style="font-size:22px">📷</span> SCAN QR PATROLI
-      </button>
-      <div class="scan-hint">Arahkan kamera ke QR Code di titik patroli</div>
-    </div>
-
-    <div class="section-hdr">LOG PATROLI HARI INI</div>
-    <div class="log-list" id="logList">
-      <div style="text-align:center;padding:32px;color:var(--muted);font-family:var(--mono);font-size:13px;">
-        Belum ada scan hari ini
-      </div>
+    <div class="preview-grid" id="qrGrid">
+      <div class="empty-state"><div style="font-size:36px;margin-bottom:12px;">⏳</div><div>Memuat dari Google Sheets…</div></div>
     </div>
   </div>
 </div>
-
-<!-- ════════════════ SCAN MODAL ════════════════ -->
-<div id="scanModal" class="hidden">
-  <div class="modal-header">
-    <h2>📷 Scan QR Code</h2>
-    <button class="btn-close" onclick="closeScanner()">✕ Tutup</button>
-  </div>
-  <div id="videoWrap">
-    <video id="qrVideo" autoplay playsinline muted></video>
-    <div class="scan-overlay">
-      <div class="scan-frame"></div>
-    </div>
-    <canvas id="scanCanvas"></canvas>
-  </div>
-  <div class="scan-status" id="scanStatus">Menunggu QR Code…</div>
-</div>
-
-<!-- ════════════════ CONFIRM MODAL ════════════════ -->
-<div id="confirmModal" class="hidden">
-  <div class="confirm-card">
-    <h3>✅ Konfirmasi Patroli</h3>
-    <div class="sub">Periksa data sebelum mengirim</div>
-    <div class="confirm-row"><span class="k">Lokasi</span><span class="v" id="cf_loc">-</span></div>
-    <div class="confirm-row"><span class="k">Waktu</span><span class="v" id="cf_time">-</span></div>
-    <div class="confirm-row"><span class="k">GPS</span><span class="v" id="cf_gps">Mengambil…</span></div>
-    <div class="confirm-row"><span class="k">Petugas</span><span class="v" id="cf_user">-</span></div>
-    <div class="confirm-btns">
-      <button class="btn-confirm no" onclick="cancelConfirm()">Batal</button>
-      <button class="btn-confirm yes" onclick="submitPatroli()">Kirim ✓</button>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════ TOAST ════════════════ -->
-<div id="toast">✓ Patroli Tercatat!</div>
 
 <script>
-// ══════════════════════════════════════════
-//  CONFIG — ganti sebelum deploy
-// ══════════════════════════════════════════
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyRLSVbq-wQQTXoMpWGt1GIcTnrsM2xg1FeK4dbzjg_-gCrFgdfKFUNzkWgBKqiCQOn/exec";
 
-// ── State ──
-let currentUser = null;
-let pendingData = null;
-let todayLogs   = [];
-let stream      = null;
-let scanning    = false;
-let rafId       = null;
+let checkpoints = [];
 
-// ── IndexedDB ──
-let db;
-const DB_NAME  = "PatrolDB";
-const DB_VER   = 1;
-const STORE    = "queue";
+const DEFAULTS = [
+  {id:"CP01",name:"Lobi Utama",    floor:"Lantai 1 · Depan",   interval:60},
+  {id:"CP02",name:"Parkir Depan",  floor:"Area Parkir",         interval:60},
+  {id:"CP03",name:"Kolam Renang",  floor:"Lantai 1 · Belakang", interval:90},
+  {id:"CP04",name:"Restoran",      floor:"Lantai 1 · Timur",    interval:60},
+  {id:"CP05",name:"Lift Utama",    floor:"Lobi Lantai 1",       interval:45},
+  {id:"CP06",name:"Koridor Lt 2",  floor:"Lantai 2",            interval:90},
+  {id:"CP07",name:"Koridor Lt 3",  floor:"Lantai 3",            interval:90},
+  {id:"CP08",name:"Back Office",   floor:"Lantai 1 · Belakang", interval:120},
+  {id:"CP09",name:"Area Dapur",    floor:"Lantai 1 · Service",  interval:90},
+];
 
-function initDB() {
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, DB_VER);
-    req.onupgradeneeded = e => e.target.result.createObjectStore(STORE, {autoIncrement:true});
-    req.onsuccess = e => { db = e.target.result; res(); };
-    req.onerror   = () => rej("DB error");
-  });
-}
-function addToQueue(data) {
-  return new Promise(res => {
-    const tx  = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).add(data);
-    tx.oncomplete = res;
-  });
-}
-function getQueue() {
-  return new Promise(res => {
-    const tx   = db.transaction(STORE, "readonly");
-    const req  = tx.objectStore(STORE).getAll();
-    req.onsuccess = () => res(req.result);
-  });
-}
-function clearQueue() {
-  return new Promise(res => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).clear();
-    tx.oncomplete = res;
-  });
+// ── Sync status ──
+function setSyncStatus(state, msg, detail) {
+  document.getElementById("syncBar").className    = state;
+  document.getElementById("syncMsg").textContent  = msg;
+  document.getElementById("syncDetail").textContent = detail || "";
 }
 
-// ── Offline / Online ──
-async function updateQueueUI() {
-  const q = await getQueue();
-  const n = q.length;
-  document.getElementById("statQueue").textContent  = n;
-  document.getElementById("queueCount").textContent = n;
-  document.getElementById("offlineBanner").classList.toggle("show", !navigator.onLine || n > 0);
-}
-window.addEventListener("online",  () => { updateQueueUI(); syncQueue(); });
-window.addEventListener("offline", () => updateQueueUI());
-
-async function syncQueue() {
-  if (!navigator.onLine) return;
-  const q = await getQueue();
-  if (!q.length) return;
-  let ok = 0;
-  for (const item of q) {
-    try {
-      const r = await fetch(GAS_URL, {method:"POST", headers:{"Content-Type":"text/plain"}, body:JSON.stringify(item)});
-      if (r.ok) ok++;
-    } catch {}
+// ── GAS: Load dari Sheet ──
+async function loadFromSheet() {
+  setSyncStatus("syncing", "Mengambil data dari Google Sheets…");
+  document.getElementById("btnReload").disabled = true;
+  try {
+    const r = await fetch(GAS_URL + "?action=checkpoints", {cache:"no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    if (d.status !== "ok") throw new Error(d.message || "Error GAS");
+    checkpoints = (d.checkpoints || []).map(c => ({
+      id: c.id, name: c.name, floor: c.floor || "", interval: parseInt(c.interval) || 60, synced: true
+    }));
+    localStorage.setItem("checkpoints_cache", JSON.stringify(checkpoints));
+    setSyncStatus("synced", "✓ Tersinkron dengan Google Sheets", "Update: " + new Date().toLocaleTimeString("id-ID"));
+  } catch(e) {
+    const cache = localStorage.getItem("checkpoints_cache");
+    if (cache) {
+      checkpoints = JSON.parse(cache);
+      setSyncStatus("offline", "Offline · Menampilkan cache lokal", e.message);
+    } else {
+      checkpoints = [];
+      setSyncStatus("error", "Gagal terhubung: " + e.message);
+    }
   }
-  if (ok === q.length) { await clearQueue(); updateQueueUI(); showToast("📡 "+ok+" data offline terkirim!"); }
+  renderAll();
+  autoIncrementId();
+  document.getElementById("btnReload").disabled = false;
 }
 
-// ── Shift detection ──
-function getShift() {
-  const h = new Date().getHours();
-  return (h >= 6 && h < 18) ? "siang" : "malam";
-}
-function updateShiftBadge() {
-  const s   = getShift();
-  const el  = document.getElementById("shiftBadge");
-  el.className = "shift-badge " + s;
-  el.innerHTML  = s === "siang"
-    ? "☀️ &nbsp;SHIFT SIANG · 06:00 – 18:00"
-    : "🌙 &nbsp;SHIFT MALAM · 18:00 – 06:00";
+// ── GAS: POST helper ──
+async function gasPost(body) {
+  const r = await fetch(GAS_URL, {method:"POST", headers:{"Content-Type":"text/plain"}, body: JSON.stringify(body)});
+  return await r.json();
 }
 
-// ── Login ──
-async function doLogin() {
-  const user = document.getElementById("inUser").value.trim();
-  const pass = document.getElementById("inPass").value;
-  const err  = document.getElementById("loginErr");
-  const btn  = document.querySelector(".btn-login");
-  if (!user || !pass) { err.style.display="block"; err.textContent="Isi semua kolom"; return; }
+// ── Tambah ──
+async function addCheckpoint() {
+  const id       = document.getElementById("cpId").value.trim().toUpperCase();
+  const name     = document.getElementById("cpName").value.trim();
+  const floor    = document.getElementById("cpFloor").value.trim();
+  const interval = parseInt(document.getElementById("cpInterval").value);
+  if (!id || !name) { alert("Isi ID dan Nama Lokasi!"); return; }
+  if (checkpoints.find(c => c.id === id)) { alert("ID " + id + " sudah ada!"); return; }
 
-  // Loading state
-  err.style.display = "none";
+  const cp = {id, name, floor, interval, synced: false};
+  checkpoints.push(cp);
+  saveLocalCache();
+  renderAll();
+
+  // Reset form
+  document.getElementById("cpName").value  = "";
+  document.getElementById("cpFloor").value = "";
+  autoIncrementId();
+
+  // Sync ke Sheet
+  setSyncStatus("syncing", "Menyimpan " + id + " ke Google Sheets…");
+  try {
+    const d = await gasPost({action:"saveCheckpoint", checkpoint: {id,name,floor,interval}});
+    if (d.status === "ok" || d.status === "updated") {
+      checkpoints = checkpoints.map(c => c.id===id ? {...c, synced:true} : c);
+      saveLocalCache();
+      setSyncStatus("synced", "✓ " + id + " tersimpan di Sheets", new Date().toLocaleTimeString("id-ID"));
+    } else throw new Error(d.message);
+  } catch(e) {
+    setSyncStatus("offline", "⚠️ " + id + " tersimpan lokal, belum ke Sheets", e.message);
+  }
+  renderTable();
+}
+
+// ── Hapus satu ──
+async function removeCheckpoint(id) {
+  if (!confirm("Hapus " + id + " dari sistem dan Google Sheets?")) return;
+  checkpoints = checkpoints.filter(c => c.id !== id);
+  saveLocalCache();
+  renderAll();
+  setSyncStatus("syncing", "Menghapus " + id + " dari Sheets…");
+  try {
+    const d = await gasPost({action:"deleteCheckpoint", id});
+    if (d.status === "ok") {
+      setSyncStatus("synced", "✓ " + id + " dihapus dari Sheets", new Date().toLocaleTimeString("id-ID"));
+    } else throw new Error(d.message);
+  } catch(e) {
+    setSyncStatus("offline", "⚠️ Offline · " + id + " dihapus lokal", e.message);
+  }
+}
+
+// ── Load Default ──
+async function loadDefaultCheckpoints() {
+  if (!confirm("Ganti semua checkpoint dengan template default hotel?")) return;
+  const btn = document.getElementById("btnDefault");
   btn.disabled = true;
-  btn.textContent = "MEMVERIFIKASI…";
-
-  // Kirim ke GAS untuk verifikasi — sertakan role=guard
+  btn.innerHTML = '<div class="spinner"></div> Menyimpan…';
+  checkpoints = DEFAULTS.map(c => ({...c, synced:false}));
+  saveLocalCache();
+  renderAll();
+  setSyncStatus("syncing", "Menyimpan " + checkpoints.length + " checkpoint ke Sheets…");
   try {
-    const r  = await fetch(GAS_URL + "?action=login&user=" + encodeURIComponent(user) + "&pass=" + encodeURIComponent(pass) + "&role=guard");
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const d  = await r.json();
-    if (d.status !== "ok") {
-      btn.disabled = false; btn.textContent = "MASUK →";
-      err.style.display = "block"; err.textContent = d.message || "Login gagal";
-      return;
-    }
-    currentUser = { nik: d.nik || user, nama: d.nama };
-  } catch (e) {
-    // Offline fallback: cek cache lokal
-    const cached = localStorage.getItem("user_" + user);
-    if (cached && cached === btoa(pass)) {
-      currentUser = { nik: user, nama: localStorage.getItem("nama_" + user) || user };
-    } else {
-      btn.disabled = false; btn.textContent = "MASUK →";
-      err.style.display = "block";
-      err.textContent = navigator.onLine ? "Username/password salah" : "Offline — login sebelumnya tidak ditemukan";
-      return;
-    }
+    const d = await gasPost({action:"batchSaveCheckpoints", checkpoints: DEFAULTS});
+    if (d.status === "ok") {
+      checkpoints = checkpoints.map(c => ({...c, synced:true}));
+      saveLocalCache();
+      setSyncStatus("synced", "✓ " + checkpoints.length + " checkpoint tersimpan di Sheets", new Date().toLocaleTimeString("id-ID"));
+    } else throw new Error(d.message);
+  } catch(e) {
+    setSyncStatus("offline", "⚠️ Offline · Tersimpan lokal", e.message);
   }
-
-  btn.disabled = false; btn.textContent = "MASUK →";
-
-  // Simpan semua credential secara permanen di perangkat ini
-  localStorage.setItem("user_" + user, btoa(pass));
-  localStorage.setItem("nama_" + user, currentUser.nama);
-  localStorage.setItem("activeUser",   JSON.stringify(currentUser));
-  // savedCreds: dipakai untuk auto-login saat buka app berikutnya
-  localStorage.setItem("savedCreds",   JSON.stringify({ nik: user, pass: btoa(pass), nama: currentUser.nama }));
-
-  err.style.display = "none";
-  showMain();
+  renderTable();
+  btn.disabled = false;
+  btn.innerHTML = '🏨 Load Default Hotel';
 }
 
-// Logout: hapus sesi aktif → kembali ke login screen
-// Jika ingin tetap pakai akun yg sama → user tinggal klik MASUK (form sudah ter-prefill)
-function doLogout() {
-  localStorage.removeItem("activeUser");
-  currentUser = null;
-  todayLogs   = [];
-  document.getElementById("logList").innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-family:var(--mono);font-size:13px;">Belum ada scan hari ini</div>';
-  document.getElementById("statDone").textContent = 0;
-  // Tampilkan hint saved creds agar user tahu bisa langsung MASUK tanpa ketik ulang
-  const raw = localStorage.getItem("savedCreds");
-  if (raw) showSavedHint(JSON.parse(raw));
-  showScreen("loginScreen");
-}
-
-// Hapus credential tersimpan → tampilkan form login kosong (ganti akun)
-function clearSavedCreds() {
-  localStorage.removeItem("savedCreds");
-  localStorage.removeItem("activeUser");
-  currentUser = null;
-  document.getElementById("inUser").value = "";
-  document.getElementById("inPass").value = "";
-  document.getElementById("savedHint").style.display = "none";
-  showScreen("loginScreen");
-}
-
-// Auto-login dari credential yang tersimpan di perangkat
-async function tryAutoLogin() {
-  let creds;
+// ── Hapus semua ──
+async function clearAll() {
+  if (!confirm("Hapus SEMUA checkpoint dari sistem dan Google Sheets?")) return;
+  checkpoints = [];
+  saveLocalCache();
+  renderAll();
+  setSyncStatus("syncing", "Menghapus semua dari Sheets…");
   try {
-    const raw = localStorage.getItem("savedCreds");
-    if (!raw) { showScreen("loginScreen"); return; }
-    creds = JSON.parse(raw);
-  } catch {
-    localStorage.removeItem("savedCreds");
-    showScreen("loginScreen");
+    const d = await gasPost({action:"clearCheckpoints"});
+    if (d.status === "ok") setSyncStatus("synced", "✓ Semua checkpoint dihapus dari Sheets", new Date().toLocaleTimeString("id-ID"));
+    else throw new Error(d.message);
+  } catch(e) {
+    setSyncStatus("offline", "⚠️ Offline · Hapus lokal", e.message);
+  }
+}
+
+// ── Render ──
+function renderAll() {
+  renderTable();
+  renderQRGrid();
+  const synced = checkpoints.filter(c => c.synced).length;
+  document.getElementById("cpCountLabel").textContent = checkpoints.length + " checkpoint";
+  document.getElementById("sheetCount").textContent   = checkpoints.length
+    ? synced + "/" + checkpoints.length + " tersinkron ke Sheets" : "";
+}
+
+function renderTable() {
+  const tbody = document.getElementById("cpTbody");
+  if (!checkpoints.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);font-family:var(--mono);font-size:12px;">Belum ada checkpoint</td></tr>';
     return;
   }
-
-  // Coba verifikasi ulang ke GAS (supaya akun nonaktif tidak bisa masuk)
-  try {
-    const r = await fetch(GAS_URL + "?action=login&user=" + encodeURIComponent(creds.nik) + "&pass=" + encodeURIComponent(atob(creds.pass)) + "&role=guard");
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const d = await r.json();
-    if (d.status !== "ok") throw new Error(d.message);
-    currentUser = { nik: d.nik || creds.nik, nama: d.nama };
-    // Update nama jika berubah
-    localStorage.setItem("savedCreds",  JSON.stringify({ ...creds, nama: d.nama }));
-    localStorage.setItem("activeUser",  JSON.stringify(currentUser));
-  } catch {
-    // Offline atau GAS error → pakai cache lokal
-    const cached = localStorage.getItem("user_" + creds.nik);
-    if (cached && cached === creds.pass) {
-      currentUser = { nik: creds.nik, nama: creds.nama };
-      localStorage.setItem("activeUser", JSON.stringify(currentUser));
-    } else {
-      // Credential tidak valid lagi → paksa login ulang
-      localStorage.removeItem("savedCreds");
-      showSavedHint(null);
-      showScreen("loginScreen");
-      return;
-    }
-  }
-  showMain();
+  tbody.innerHTML = checkpoints.map(c => `
+    <tr>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--amber);">${c.id}</td>
+      <td style="font-size:13px;">${c.name}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">${c.interval}m</td>
+      <td><span class="sync-icon ${c.synced?'ok':'pending'}" title="${c.synced?'Tersimpan di Sheets':'Belum tersinkron'}">${c.synced?'✓':'⏳'}</span></td>
+      <td><button class="btn-del" onclick="removeCheckpoint('${c.id}')">✕</button></td>
+    </tr>`).join('');
 }
 
-// Tampilkan hint "Masuk sebagai X" di login screen
-function showSavedHint(creds) {
-  const hint = document.getElementById("savedHint");
-  if (!creds) { hint.style.display = "none"; return; }
-  hint.style.display = "block";
-  document.getElementById("savedName").textContent = creds.nama + " (" + creds.nik + ")";
-  // Pre-fill form supaya tetap bisa MASUK manual jika mau
-  document.getElementById("inUser").value = creds.nik;
-}
-
-function showMain() {
-  document.getElementById("topbarUser").textContent = currentUser.nama;
-  document.getElementById("statTotal").textContent  = "< 10";
-  updateShiftBadge();
-  updateQueueUI();
-  loadTodayLogs();
-  showScreen("mainScreen");
-}
-
-// ── Load today logs from GAS ──
-async function loadTodayLogs() {
-  if (!navigator.onLine) return;
-  try {
-    const r = await fetch(GAS_URL + "?action=todayLogs&user=" + encodeURIComponent(currentUser.nik));
-    const d = await r.json();
-    if (d.logs) {
-      // Gunakan cpName (nama lokasi) untuk tampilan, bukan ID checkpoint mentah
-      todayLogs = d.logs.map(l => ({
-        ...l,
-        checkpoint: l.cpName || l.checkpoint
-      }));
-      renderLogs();
-      document.getElementById("statDone").textContent = todayLogs.length;
-    }
-  } catch {}
-}
-
-function renderLogs() {
-  const el = document.getElementById("logList");
-  if (!todayLogs.length) {
-    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-family:var(--mono);font-size:13px;">Belum ada scan hari ini</div>';
+function renderQRGrid() {
+  const grid = document.getElementById("qrGrid");
+  if (!checkpoints.length) {
+    grid.innerHTML = `<div class="empty-state"><div style="font-size:40px;margin-bottom:12px;">📷</div><div>Belum ada QR Code.</div><div style="margin-top:8px;">Tambah checkpoint atau klik <strong style="color:var(--amber)">Load Default Hotel</strong></div></div>`;
     return;
   }
-  el.innerHTML = todayLogs.map(l => `
-    <div class="log-item">
-      <div class="log-dot ${l.status||'ok'}"></div>
-      <div class="log-info">
-        <div class="loc">${l.checkpoint}</div>
-        <div class="meta">${l.gps || 'GPS tidak tersedia'} · ${l.shift || '-'}</div>
-      </div>
-      <div class="log-time">${l.time}</div>
-    </div>
-  `).join('');
-}
+  grid.innerHTML = checkpoints.map(c => `
+    <div class="qr-card" id="card_${c.id}">
+      <span class="sheet-badge ${c.synced?'synced':'pending'} no-print">${c.synced?'✓ Sheets':'⏳ Lokal'}</span>
+      <div class="hotel-name">🏨 LOTUS GARDEN <span>HOTEL</span></div>
+      <div class="qr-box" id="qr_${c.id}"></div>
+      <div class="cp-name">${c.name}</div>
+      <div class="cp-id">${c.id} · ${c.interval} menit</div>
+      <div class="cp-floor">${c.floor||''}</div>
+    </div>`).join('');
 
-// ── QR Scanner ──
-function openScanner() {
-  document.getElementById("scanModal").classList.remove("hidden");
-  document.getElementById("scanZone").classList.add("active");
-  document.getElementById("scanStatus").textContent = "Memulai kamera…";
-  scanAttempts = 0;
-  lastScanTime = 0;
-  startCamera();
-}
-function closeScanner() {
-  document.getElementById("scanModal").classList.add("hidden");
-  document.getElementById("scanZone").classList.remove("active");
-  stopCamera();
-}
-async function startCamera() {
-  try {
-    // Preferensikan kamera belakang, fallback ke kamera manapun
-    let stream_;
-    try {
-      stream_ = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal:"environment" }, width:{ideal:1280}, height:{ideal:720} }
-      });
-    } catch {
-      stream_ = await navigator.mediaDevices.getUserMedia({ video: true });
+  checkpoints.forEach(c => {
+    const el = document.getElementById("qr_" + c.id);
+    if (el && !el.hasChildNodes()) {
+      try {
+        new QRCode(el, {
+          text: c.id,  // Encode ID saja agar QR sederhana & mudah dibaca jsQR
+          width:220, height:220, colorDark:"#000000", colorLight:"#ffffff",
+          correctLevel: QRCode.CorrectLevel.L
+        });
+      } catch(e) { el.textContent = "QR error: " + e.message; }
     }
-    stream = stream_;
-    const vid = document.getElementById("qrVideo");
-    vid.srcObject = stream;
-
-    // Multi-event fallback: 'playing' paling reliable tapi beberapa Android
-    // hanya trigger 'canplay' atau 'loadeddata' — tangkap ketiganya
-    let scanStarted = false;
-    const startScan = () => {
-      if (scanStarted) return;
-      scanStarted = true;
-      scanning = true;
-      document.getElementById("scanStatus").textContent = "Menunggu QR Code…";
-      if (!rafId) rafId = requestAnimationFrame(tick);
-    };
-    vid.addEventListener("playing",    startScan, { once: true });
-    vid.addEventListener("canplay",    startScan, { once: true });
-    vid.addEventListener("loadeddata", startScan, { once: true });
-    // Fallback timeout — jika semua event gagal, mulai paksa setelah 1.5 detik
-    setTimeout(() => { if (!scanStarted && stream) startScan(); }, 1500);
-
-    vid.play().catch(err => {
-      document.getElementById("scanStatus").textContent = "❌ Video tidak bisa dimulai: " + err.message;
-    });
-  } catch (e) {
-    document.getElementById("scanStatus").textContent = "❌ Kamera tidak bisa diakses: " + e.message;
-  }
-}
-function stopCamera() {
-  scanning = false;
-  if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
-  if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
-}
-// Throttle scan: cukup proses setiap 150ms (tidak perlu 60fps)
-let lastScanTime = 0;
-let scanAttempts = 0;
-
-function tick(now) {
-  if (!scanning) return;
-
-  // Throttle — skip frame jika belum 150ms sejak scan terakhir
-  if (now - lastScanTime < 150) {
-    rafId = requestAnimationFrame(tick); return;
-  }
-  lastScanTime = now;
-
-  const vid    = document.getElementById("qrVideo");
-  const canvas = document.getElementById("scanCanvas");
-
-  // Tunggu sampai video benar-benar punya frame
-  if (vid.readyState < vid.HAVE_ENOUGH_DATA || vid.videoWidth === 0 || vid.paused) {
-    rafId = requestAnimationFrame(tick); return;
-  }
-
-  // Gambar dengan resolusi asli video (jsQR butuh pixel 1:1)
-  const w = vid.videoWidth;
-  const h = vid.videoHeight;
-  if (canvas.width !== w || canvas.height !== h) {
-    canvas.width  = w;
-    canvas.height = h;
-  }
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.drawImage(vid, 0, 0, w, h);
-
-  const img  = ctx.getImageData(0, 0, w, h);
-  const code = jsQR(img.data, img.width, img.height, {
-    inversionAttempts: "attemptBoth"
-  });
-
-  if (code && code.data) {
-    scanning = false;
-    stopCamera();
-    closeScanner();
-    onQRScanned(code.data);
-  } else {
-    // Update counter agar user tahu scan aktif berjalan
-    scanAttempts++;
-    if (scanAttempts % 5 === 0) {
-      document.getElementById("scanStatus").textContent = "Menunggu QR Code… (" + scanAttempts + " frame)";
-    }
-    rafId = requestAnimationFrame(tick);
-  }
-}
-
-// ── After QR Scanned ──
-function onQRScanned(raw) {
-  // QR dari qr_generator.html mengandung JSON: {id, name, floor, interval}
-  // checkpoint = ID (kolom D di GAS), cpName = nama lokasi (kolom E di GAS)
-  let checkpointId = raw;
-  let checkpointName = raw;
-  try {
-    const j = JSON.parse(raw);
-    checkpointId   = j.id   || j.name || raw;  // ID checkpoint untuk GAS
-    checkpointName = j.name || j.id   || raw;  // Nama tampil untuk user
-  } catch {}
-  const now   = new Date();
-  const timeStr = now.toLocaleTimeString("id-ID", {hour:"2-digit",minute:"2-digit"});
-  document.getElementById("cf_loc").textContent  = checkpointName;
-  document.getElementById("cf_time").textContent = timeStr;
-  document.getElementById("cf_user").textContent = currentUser.nama;
-  document.getElementById("cf_gps").textContent  = "Mengambil GPS…";
-  pendingData = {
-    checkpoint: checkpointId,       // ID ke GAS (kolom D)
-    cpName: checkpointName,         // Nama ke GAS (kolom E)
-    displayName: checkpointName,    // Untuk log lokal
-    timestamp: now.toISOString(),
-    user: currentUser.nik,
-    nama: currentUser.nama,
-    shift: getShift()
-  };
-  document.getElementById("confirmModal").classList.remove("hidden");
-  getGPS();
-}
-
-function getGPS() {
-  if (!navigator.geolocation) {
-    document.getElementById("cf_gps").textContent = "GPS tidak tersedia";
-    pendingData.lat = null; pendingData.lng = null;
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const lat = pos.coords.latitude.toFixed(6);
-      const lng = pos.coords.longitude.toFixed(6);
-      document.getElementById("cf_gps").textContent = lat + ", " + lng;
-      pendingData.lat = parseFloat(lat);
-      pendingData.lng = parseFloat(lng);
-    },
-    () => {
-      document.getElementById("cf_gps").textContent = "Gagal dapat GPS";
-      pendingData.lat = null; pendingData.lng = null;
-    },
-    { timeout:8000, enableHighAccuracy:true }
-  );
-}
-
-function cancelConfirm() {
-  document.getElementById("confirmModal").classList.add("hidden");
-  pendingData = null;
-}
-
-async function submitPatroli() {
-  if (!pendingData) return;
-  document.getElementById("confirmModal").classList.add("hidden");
-  const data = { ...pendingData };
-  pendingData = null;
-
-  // Add to local log immediately — tampilkan nama lokasi bukan ID mentah
-  todayLogs.unshift({
-    checkpoint: data.displayName || data.cpName || data.checkpoint,
-    time: new Date(data.timestamp).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}),
-    gps: data.lat ? data.lat+","+data.lng : "N/A",
-    shift: data.shift,
-    status: navigator.onLine ? "ok" : "pending"
-  });
-  renderLogs();
-  document.getElementById("statDone").textContent = todayLogs.length;
-
-  if (navigator.onLine) {
-    try {
-      const r = await fetch(GAS_URL, { method:"POST", headers:{"Content-Type":"text/plain"}, body:JSON.stringify(data) });
-      const d = await r.json();
-      if (d.status === "success") { showToast("✓ Patroli Tercatat!"); }
-      else showToast("⚠️ " + (d.message||"Error"));
-    } catch {
-      await addToQueue(data);
-      showToast("📡 Tersimpan offline");
-    }
-  } else {
-    await addToQueue(data);
-    showToast("📡 Tersimpan offline");
-  }
-  updateQueueUI();
-}
-
-// ── Utils ──
-function showScreen(id) {
-  document.querySelectorAll(".screen").forEach(s => {
-    s.classList.toggle("hidden", s.id !== id);
   });
 }
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 3000);
+
+function saveLocalCache() {
+  localStorage.setItem("checkpoints_cache", JSON.stringify(checkpoints));
+}
+
+function autoIncrementId() {
+  const maxNum = checkpoints.reduce((m, c) => {
+    const n = parseInt(c.id.replace(/\D/g,"")) || 0;
+    return Math.max(m, n);
+  }, 0);
+  document.getElementById("cpId").value = "CP" + String(maxNum + 1).padStart(2, "0");
 }
 
 // ── Init ──
-window.addEventListener("DOMContentLoaded", async () => {
-  await initDB();
-  updateQueueUI();
-  setInterval(updateQueueUI, 10000);
-  setInterval(syncQueue, 30000);
-
-  // Tampilkan hint saved creds di login screen dulu (sementara auto-login berjalan)
-  const raw = localStorage.getItem("savedCreds");
-  if (raw) showSavedHint(JSON.parse(raw));
-
-  // Cek sesi aktif → langsung masuk tanpa request ke GAS
-  const sess = localStorage.getItem("activeUser");
-  if (sess) {
-    currentUser = JSON.parse(sess);
-    showMain();
-  } else {
-    // Tidak ada sesi aktif → coba auto-login dari savedCreds
-    await tryAutoLogin();
-  }
+window.addEventListener("DOMContentLoaded", () => {
+  loadFromSheet();
+  // Live polling: refresh dari Sheets setiap 60 detik otomatis
+  setInterval(() => {
+    if (navigator.onLine) loadFromSheet();
+  }, 60000);
 });
-</script>
-
-<!-- ══════════ PWA: SERVICE WORKER + INSTALL PROMPT ══════════ -->
-<div id="pwaInstallBanner" style="
-  display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
-  background:#161b22; border:1px solid rgba(240,165,0,.4); border-radius:12px;
-  padding:12px 16px; max-width:320px; width:calc(100% - 48px);
-  box-shadow:0 8px 32px rgba(0,0,0,.6); z-index:9999;
-  display:none; align-items:center; gap:12px; font-family:'Rajdhani',sans-serif;">
-  <img src="icon-192.png" style="width:40px;height:40px;border-radius:8px;flex-shrink:0;">
-  <div style="flex:1;">
-    <div style="font-weight:700;font-size:14px;color:#f0f6fc;">Install LG Patrol</div>
-    <div style="font-size:12px;color:#8b949e;">Tambahkan ke layar utama untuk akses offline</div>
-  </div>
-  <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-    <button id="pwaInstallBtn" style="background:#f0a500;color:#0d1117;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">INSTALL</button>
-    <button onclick="document.getElementById('pwaInstallBanner').style.display='none'" style="background:none;border:none;color:#8b949e;font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace;">Nanti</button>
-  </div>
-</div>
-
-<script>
-// ── Service Worker ──
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js", { scope: "./" })
-      .then(reg => {
-        console.log("[PWA] SW registered:", reg.scope);
-        // Cek update SW setiap 60 detik
-        setInterval(() => reg.update(), 60000);
-        reg.addEventListener("updatefound", () => {
-          const newSW = reg.installing;
-          newSW.addEventListener("statechange", () => {
-            if (newSW.state === "installed" && navigator.serviceWorker.controller) {
-              // Ada versi baru — beri notif
-              showToast("🔄 Update tersedia. Refresh untuk memperbarui.");
-            }
-          });
-        });
-      })
-      .catch(err => console.warn("[PWA] SW error:", err));
-  });
-}
-
-// ── Install Prompt ──
-let deferredPrompt;
-window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Tunda banner 3 detik supaya tidak langsung muncul
-  setTimeout(() => {
-    const banner = document.getElementById("pwaInstallBanner");
-    if (banner) banner.style.display = "flex";
-  }, 3000);
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("pwaInstallBtn");
-  if (btn) {
-    btn.addEventListener("click", async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log("[PWA] Install outcome:", outcome);
-      deferredPrompt = null;
-      document.getElementById("pwaInstallBanner").style.display = "none";
-    });
-  }
-});
-
-window.addEventListener("appinstalled", () => {
-  console.log("[PWA] App installed!");
-  deferredPrompt = null;
-  document.getElementById("pwaInstallBanner").style.display = "none";
-  showToast("✅ LG Patrol berhasil diinstal!");
-});
+window.addEventListener("online", () => loadFromSheet());
 </script>
 </body>
 </html>
