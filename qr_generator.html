@@ -358,7 +358,7 @@ function renderQRGrid() {
     if (el && !el.hasChildNodes()) {
       try {
         new QRCode(el, {
-          text: c.id,  // Encode ID saja agar QR sederhana & mudah dibaca jsQR
+          text: c.id,
           width:220, height:220, colorDark:"#000000", colorLight:"#ffffff",
           correctLevel: QRCode.CorrectLevel.L
         });
