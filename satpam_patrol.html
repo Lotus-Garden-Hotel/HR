@@ -357,8 +357,8 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyRLSVbq-wQQTXoMpWGt1GI
 let currentUser   = null;
 let pendingData   = null;
 let todayLogs     = [];
-let html5Scanner  = null;   // html5-qrcode instance
-let cpCache       = {};     // { CP01: {id,name,floor}, ... }
+let html5Scanner  = null;
+let cpCache       = {};
 
 // ── IndexedDB ──
 let db;
@@ -605,11 +605,32 @@ function renderLogs() {
   `).join('');
 }
 
+// ══════════════════════════════════════
+//  DEBUG OVERLAY — tampil di HP
+// ══════════════════════════════════════
+const _dbg = [];
+function dbg(msg, type) {
+  const t = new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  const entry = { t, msg, type: type||"info" };
+  _dbg.unshift(entry);
+  if (_dbg.length > 30) _dbg.pop();
+  const el = document.getElementById("dbgLog");
+  if (!el) return;
+  el.innerHTML = _dbg.map(e => {
+    const color = e.type==="ok"?"#22c55e": e.type==="err"?"#ef4444": e.type==="warn"?"#f0a500":"#8b949e";
+    return `<div style="color:${color};font-size:11px;border-bottom:1px solid #30363d;padding:3px 0;">[${e.t}] ${e.msg}</div>`;
+  }).join("");
+}
+
 // ── QR Scanner (html5-qrcode) ──
 function openScanner() {
   document.getElementById("scanModal").classList.remove("hidden");
   document.getElementById("scanZone").classList.add("active");
   document.getElementById("scanStatus").textContent = "Memulai kamera…";
+  dbg("openScanner() dipanggil");
+  dbg("navigator.onLine: " + navigator.onLine);
+  dbg("mediaDevices ada: " + !!(navigator.mediaDevices));
+  dbg("location.protocol: " + location.protocol);
   startHtml5Scanner();
 }
 
@@ -617,110 +638,113 @@ function closeScanner() {
   document.getElementById("scanModal").classList.add("hidden");
   document.getElementById("scanZone").classList.remove("active");
   stopHtml5Scanner();
+  dbg("Scanner ditutup");
 }
 
 async function startHtml5Scanner() {
-  // Bersihkan instance lama jika ada
   await stopHtml5Scanner();
-
-  // Bersihkan container
   const container = document.getElementById("qr-reader");
   container.innerHTML = "";
+  dbg("startHtml5Scanner() start");
 
   try {
+    dbg("Membuat Html5Qrcode instance…");
     html5Scanner = new Html5Qrcode("qr-reader");
 
-    const config = {
-      fps: 10,                    // 10 frame/detik — cukup, hemat baterai
-      qrbox: { width: 250, height: 250 },  // area scan di tengah frame
-      aspectRatio: 1.0,           // square — paling stabil di mobile
-      disableFlip: false          // coba mirror juga
-    };
+    const cfg = { fps:10, qrbox:{width:250,height:250}, aspectRatio:1.0, disableFlip:false };
+    dbg("Memanggil .start() → facingMode:environment");
 
     await html5Scanner.start(
-      { facingMode: "environment" },   // kamera belakang
-      config,
-      (decodedText) => {
-        // ✅ QR berhasil dibaca
+      { facingMode:"environment" }, cfg,
+      (text, result) => {
+        dbg("✅ QR TERBACA: " + text, "ok");
         stopHtml5Scanner();
         closeScanner();
-        onQRScanned(decodedText);
+        onQRScanned(text);
       },
-      (errorMsg) => {
-        // Scan sedang berjalan tapi belum dapat QR — update status
+      (errMsg) => {
+        // ini dipanggil terus saat scanning — jangan log semua, cukup tiap 30 frame
+        if (!window._scanTick) window._scanTick = 0;
+        window._scanTick++;
+        if (window._scanTick % 30 === 1) dbg("Scanning… frame #" + window._scanTick);
         document.getElementById("scanStatus").textContent = "🔍 Arahkan ke QR Code…";
       }
     );
 
+    dbg(".start() sukses — kamera aktif", "ok");
     document.getElementById("scanStatus").textContent = "🔍 Arahkan ke QR Code…";
 
-  } catch (err) {
-    // Fallback: coba kamera apapun (depan/belakang)
+  } catch(err) {
+    dbg("❌ environment gagal: " + err.message, "err");
+    dbg("Mencoba fallback kamera user…", "warn");
     try {
+      container.innerHTML = "";
       html5Scanner = new Html5Qrcode("qr-reader");
       await html5Scanner.start(
-        { facingMode: "user" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => { stopHtml5Scanner(); closeScanner(); onQRScanned(decodedText); },
-        () => {}
+        { facingMode:"user" },
+        { fps:10, qrbox:{width:250,height:250} },
+        (text) => { dbg("✅ QR (user cam): "+text,"ok"); stopHtml5Scanner(); closeScanner(); onQRScanned(text); },
+        ()=>{}
       );
-      document.getElementById("scanStatus").textContent = "🔍 Arahkan ke QR Code…";
-    } catch (err2) {
-      document.getElementById("scanStatus").textContent = "❌ Kamera tidak bisa diakses: " + err2.message;
+      dbg("Fallback user cam sukses","ok");
+    } catch(err2) {
+      dbg("❌ Fallback gagal: " + err2.message, "err");
+      document.getElementById("scanStatus").textContent = "❌ " + err2.message;
     }
   }
 }
 
 async function stopHtml5Scanner() {
+  window._scanTick = 0;
   if (html5Scanner) {
     try {
-      const state = html5Scanner.getState();
-      // State 2 = SCANNING, State 3 = PAUSED
-      if (state === 2 || state === 3) {
-        await html5Scanner.stop();
-      }
-    } catch {}
+      const st = html5Scanner.getState();
+      dbg("stopHtml5Scanner state=" + st);
+      if (st === 2 || st === 3) await html5Scanner.stop();
+    } catch(e) { dbg("stop err: "+e.message,"warn"); }
     try { html5Scanner.clear(); } catch {}
     html5Scanner = null;
   }
-  // Bersihkan container agar tidak ada elemen sisa
-  const container = document.getElementById("qr-reader");
-  if (container) container.innerHTML = "";
+  const c = document.getElementById("qr-reader");
+  if (c) c.innerHTML = "";
 }
 
-// ── Load checkpoint cache dari GAS/localStorage ──
+// ── Checkpoint cache ──
 async function loadCheckpointsCache() {
+  dbg("loadCheckpointsCache()…");
   try {
     const local = localStorage.getItem("checkpoints_cache");
-    if (local) { JSON.parse(local).forEach(cp => { cpCache[cp.id] = cp; }); }
+    if (local) { JSON.parse(local).forEach(cp => { cpCache[cp.id]=cp; }); dbg("Cache lokal: "+Object.keys(cpCache).length+" CP","ok"); }
   } catch {}
   if (navigator.onLine) {
     try {
-      const r = await fetch(GAS_URL + "?action=checkpoints", { cache:"no-store" });
+      const r = await fetch(GAS_URL + "?action=checkpoints", {cache:"no-store"});
       const d = await r.json();
-      if (d.status === "ok" && d.checkpoints) {
-        cpCache = {};
-        d.checkpoints.forEach(cp => { cpCache[cp.id] = cp; });
+      if (d.status==="ok" && d.checkpoints) {
+        cpCache={};
+        d.checkpoints.forEach(cp => { cpCache[cp.id]=cp; });
         localStorage.setItem("checkpoints_cache", JSON.stringify(d.checkpoints));
-      }
-    } catch {}
-  }
+        dbg("Cache dari GAS: "+d.checkpoints.length+" CP","ok");
+      } else dbg("GAS checkpoints error: "+JSON.stringify(d),"err");
+    } catch(e) { dbg("Fetch checkpoints gagal: "+e.message,"err"); }
+  } else dbg("Offline — pakai cache lokal","warn");
 }
 
 // ── After QR Scanned ──
 function onQRScanned(raw) {
+  dbg("onQRScanned raw="+raw,"ok");
   let checkpointId   = raw.trim();
   let checkpointName = raw.trim();
   try {
-    // QR lama: JSON string {"id":"CP01","name":"..."}
     const j = JSON.parse(raw);
     checkpointId   = j.id   || j.name || raw;
     checkpointName = j.name || j.id   || raw;
+    dbg("QR format JSON → id="+checkpointId);
   } catch {
-    // QR baru: plain ID ("CP01") → lookup nama dari cache
     if (cpCache[checkpointId]) {
       checkpointName = cpCache[checkpointId].name || checkpointId;
-    }
+      dbg("QR plain ID → nama="+checkpointName);
+    } else dbg("QR plain ID tapi tidak ada di cache: "+checkpointId,"warn");
   }
   const now   = new Date();
   const timeStr = now.toLocaleTimeString("id-ID", {hour:"2-digit",minute:"2-digit"});
@@ -787,11 +811,15 @@ async function submitPatroli() {
 
   if (navigator.onLine) {
     try {
+      dbg("POST ke GAS: "+JSON.stringify(data).substring(0,80)+"…");
       const r = await fetch(GAS_URL, { method:"POST", headers:{"Content-Type":"text/plain"}, body:JSON.stringify(data) });
+      dbg("Response status: "+r.status);
       const d = await r.json();
+      dbg("GAS reply: "+JSON.stringify(d), d.status==="success"?"ok":"err");
       if (d.status === "success") { showToast("✓ Patroli Tercatat!"); }
       else showToast("⚠️ " + (d.message||"Error"));
-    } catch {
+    } catch(e) {
+      dbg("Fetch POST gagal: "+e.message,"err");
       await addToQueue(data);
       showToast("📡 Tersimpan offline");
     }
@@ -820,6 +848,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   await initDB();
   loadCheckpointsCache();
   updateQueueUI();
+  dbg("App init — protocol:"+location.protocol+" host:"+location.hostname);
   setInterval(updateQueueUI, 10000);
   setInterval(syncQueue, 30000);
 
@@ -913,5 +942,116 @@ window.addEventListener("appinstalled", () => {
   showToast("✅ LG Patrol berhasil diinstal!");
 });
 </script>
+
+<!-- ════════════════ DEBUG PANEL ════════════════ -->
+<div id="debugPanel" style="
+  display:none; position:fixed; inset:0; background:#0d1117; z-index:9999;
+  flex-direction:column; font-family:'JetBrains Mono',monospace;
+">
+  <div style="
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; background:#161b22; border-bottom:1px solid #30363d;
+  ">
+    <span style="color:#f0a500; font-weight:700; font-size:14px;">🐛 DEBUG LOG</span>
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('dbgLog').innerHTML='';window._dbg=[];"
+        style="background:#21262d;border:1px solid #30363d;border-radius:6px;
+               padding:6px 12px;color:#8b949e;font-size:12px;cursor:pointer;">
+        Clear
+      </button>
+      <button onclick="document.getElementById('debugPanel').style.display='none';"
+        style="background:#ef444422;border:1px solid #ef4444;border-radius:6px;
+               padding:6px 12px;color:#ef4444;font-size:12px;cursor:pointer;">
+        Tutup
+      </button>
+    </div>
+  </div>
+
+  <!-- Info statis -->
+  <div id="dbgInfo" style="
+    padding:10px 16px; background:#161b22; border-bottom:1px solid #30363d;
+    font-size:11px; color:#8b949e; line-height:1.8;
+  ">Memuat info…</div>
+
+  <!-- Test GAS button -->
+  <div style="padding:10px 16px; display:flex; gap:8px; flex-wrap:wrap;">
+    <button onclick="testGAS()"
+      style="flex:1;background:#f0a50022;border:1px solid #f0a500;border-radius:6px;
+             padding:8px;color:#f0a500;font-size:12px;cursor:pointer;min-width:120px;">
+      🔌 Test GAS Ping
+    </button>
+    <button onclick="testLogin()"
+      style="flex:1;background:#3b82f622;border:1px solid #3b82f6;border-radius:6px;
+             padding:8px;color:#3b82f6;font-size:12px;cursor:pointer;min-width:120px;">
+      👤 Test Login
+    </button>
+    <button onclick="testCameras()"
+      style="flex:1;background:#22c55e22;border:1px solid #22c55e;border-radius:6px;
+             padding:8px;color:#22c55e;font-size:12px;cursor:pointer;min-width:120px;">
+      📷 List Kamera
+    </button>
+  </div>
+
+  <!-- Log scrollable -->
+  <div id="dbgLog" style="
+    flex:1; overflow-y:auto; padding:10px 16px;
+  "></div>
+</div>
+
+<!-- Tombol buka debug — pojok kanan bawah, tap 3x cepat -->
+<button id="dbgBtn" onclick="openDebug()"
+  style="
+    position:fixed; bottom:16px; right:16px; z-index:9998;
+    background:#f0a50033; border:1px solid #f0a500; border-radius:50%;
+    width:40px; height:40px; font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  ">🐛</button>
+
+<script>
+function openDebug() {
+  const panel = document.getElementById("debugPanel");
+  panel.style.display = "flex";
+  // Isi info statis
+  const info = [
+    "URL: " + location.href,
+    "Protocol: " + location.protocol,
+    "Online: " + navigator.onLine,
+    "UserAgent: " + navigator.userAgent.substring(0,80),
+    "mediaDevices: " + !!(navigator.mediaDevices),
+    "GAS_URL: " + GAS_URL.substring(0,60)+"…",
+  ].join("\n");
+  document.getElementById("dbgInfo").innerText = info;
+}
+
+async function testGAS() {
+  dbg("Test GAS ping…");
+  try {
+    const r = await fetch(GAS_URL, {cache:"no-store"});
+    const d = await r.json();
+    dbg("GAS ping OK: "+JSON.stringify(d),"ok");
+  } catch(e) { dbg("GAS ping GAGAL: "+e.message,"err"); }
+}
+
+async function testLogin() {
+  if (!currentUser) { dbg("Belum login — tidak bisa test","warn"); return; }
+  dbg("Test login untuk NIK: "+currentUser.nik);
+  try {
+    const r = await fetch(GAS_URL+"?action=checkpoints",{cache:"no-store"});
+    const d = await r.json();
+    dbg("Checkpoints: "+JSON.stringify(d).substring(0,100)+"…", d.status==="ok"?"ok":"err");
+  } catch(e) { dbg("Gagal: "+e.message,"err"); }
+}
+
+async function testCameras() {
+  dbg("Enumerating cameras…");
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter(d=>d.kind==="videoinput");
+    dbg("Total kamera ditemukan: "+cams.length, cams.length>0?"ok":"warn");
+    cams.forEach((c,i)=>dbg("  ["+i+"] "+c.label+" id="+c.deviceId.substring(0,12)));
+  } catch(e) { dbg("Gagal enumerate: "+e.message,"err"); }
+}
+</script>
+
 </body>
 </html>
