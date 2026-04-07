@@ -133,6 +133,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
         <option value="120">2 jam</option>
       </select>
     </div>
+
+    <!-- ── GPS LOCK COORDINATES ── -->
+    <div style="background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.2);border-radius:8px;padding:12px;margin-bottom:14px;">
+      <div style="font-size:10px;font-family:var(--mono);color:var(--amber);letter-spacing:.08em;margin-bottom:10px;">🔒 GPS LOCK — KOORDINAT LOKASI</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+        <div>
+          <label style="display:block;font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;margin-bottom:4px;">LATITUDE</label>
+          <input type="number" id="cpLat" placeholder="-7.816500" step="0.000001" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+        </div>
+        <div>
+          <label style="display:block;font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;margin-bottom:4px;">LONGITUDE</label>
+          <input type="number" id="cpLng" placeholder="112.012500" step="0.000001" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:flex-end;">
+        <div style="flex:1;">
+          <label style="display:block;font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;margin-bottom:4px;">RADIUS (METER)</label>
+          <input type="number" id="cpRadius" value="50" min="10" max="300" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;">
+        </div>
+        <button onclick="getMyLocationForCP()" id="btnAmbilLokasi" style="flex:1;padding:8px 10px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);border-radius:6px;color:#60a5fa;font-family:var(--mono);font-size:11px;cursor:pointer;transition:.2s;white-space:nowrap;">📍 Ambil Lokasi Saat Ini</button>
+      </div>
+      <div id="locAmbilStatus" style="font-size:11px;font-family:var(--mono);color:var(--muted);margin-top:6px;min-height:14px;"></div>
+    </div>
     <button class="btn btn-add" id="btnAdd" onclick="addCheckpoint()">+ GENERATE QR</button>
     <hr class="divider">
     <h2 style="margin-bottom:10px;">📋 TEMPLATE BATCH</h2>
@@ -144,7 +167,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <button onclick="clearAll()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:5px;padding:3px 10px;color:var(--red);font-size:11px;cursor:pointer;font-family:var(--mono);">Hapus Semua</button>
     </div>
     <table class="checkpoint-table">
-      <thead><tr><th>ID</th><th>Nama</th><th>Int.</th><th>Sheet</th><th></th></tr></thead>
+      <thead><tr><th>ID</th><th>Nama</th><th>Int.</th><th>GPS</th><th>Sheet</th><th></th></tr></thead>
       <tbody id="cpTbody"><tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);font-family:var(--mono);font-size:12px;">Memuat…</td></tr></tbody>
     </table>
   </div>
@@ -165,17 +188,21 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyRLSVbq-wQQTXoMpWGt1GI
 
 let checkpoints = [];
 
+// ── Koordinat pusat hotel (Lotus Garden Kediri) — admin update via "Ambil Lokasi" ──
+const HOTEL_LAT = -7.816500;
+const HOTEL_LNG = 112.012500;
+
 const DEFAULTS = [
-  {id:"CP01", name:"Area Genset",            floor:"Lantai 1",  interval:60},
-  {id:"CP02", name:"Area Hall",              floor:"Lantai 2",  interval:60},
-  {id:"CP03", name:"Area Depan Office",      floor:"Lantai 2",  interval:60},
-  {id:"CP04", name:"Area Linen HK",          floor:"Lantai 2",  interval:60},
-  {id:"CP05", name:"Area Bar Lama",          floor:"Lantai 1",  interval:60},
-  {id:"CP06", name:"Area Junior Bawah",      floor:"Lantai 1",  interval:60},
-  {id:"CP07", name:"Area Business Atas",     floor:"Lantai 2",  interval:60},
-  {id:"CP08", name:"Depan Kitchen/Stewart",  floor:"Lantai 1",  interval:60},
-  {id:"CP09", name:"Lorong Superior",        floor:"Lantai 1",  interval:60},
-  {id:"CP10", name:"Depan FO",               floor:"Lantai 2",  interval:60},
+  {id:"CP01", name:"Area Genset",           floor:"Lantai 1", interval:60, lat:-7.816600, lng:112.012300, radius:40},
+  {id:"CP02", name:"Area Hall",             floor:"Lantai 2", interval:60, lat:-7.816400, lng:112.012500, radius:50},
+  {id:"CP03", name:"Area Depan Office",     floor:"Lantai 2", interval:60, lat:-7.816300, lng:112.012600, radius:40},
+  {id:"CP04", name:"Area Linen HK",         floor:"Lantai 2", interval:60, lat:-7.816200, lng:112.012400, radius:40},
+  {id:"CP05", name:"Area Bar Lama",         floor:"Lantai 1", interval:60, lat:-7.816700, lng:112.012200, radius:45},
+  {id:"CP06", name:"Area Junior Bawah",     floor:"Lantai 1", interval:60, lat:-7.816800, lng:112.012500, radius:40},
+  {id:"CP07", name:"Area Business Atas",    floor:"Lantai 2", interval:60, lat:-7.816100, lng:112.012700, radius:45},
+  {id:"CP08", name:"Depan Kitchen/Stewart", floor:"Lantai 1", interval:60, lat:-7.816900, lng:112.012300, radius:40},
+  {id:"CP09", name:"Lorong Superior",       floor:"Lantai 1", interval:60, lat:-7.817000, lng:112.012600, radius:45},
+  {id:"CP10", name:"Depan FO",              floor:"Lantai 2", interval:60, lat:-7.816000, lng:112.012800, radius:50},
 ];
 
 // ── Sync status ──
@@ -195,7 +222,12 @@ async function loadFromSheet() {
     const d = await r.json();
     if (d.status !== "ok") throw new Error(d.message || "Error GAS");
     checkpoints = (d.checkpoints || []).map(c => ({
-      id: c.id, name: c.name, floor: c.floor || "", interval: parseInt(c.interval) || 60, synced: true
+      id: c.id, name: c.name, floor: c.floor || "",
+      interval: parseInt(c.interval) || 60,
+      lat: parseFloat(c.lat) || 0,
+      lng: parseFloat(c.lng) || 0,
+      radius: parseInt(c.radius) || 50,
+      synced: true
     }));
     localStorage.setItem("checkpoints_cache", JSON.stringify(checkpoints));
     setSyncStatus("synced", "✓ Tersinkron dengan Google Sheets", "Update: " + new Date().toLocaleTimeString("id-ID"));
@@ -220,16 +252,49 @@ async function gasPost(body) {
   return await r.json();
 }
 
+// ── Ambil lokasi GPS saat ini untuk checkpoint form ──
+function getMyLocationForCP() {
+  const btn = document.getElementById("btnAmbilLokasi");
+  const status = document.getElementById("locAmbilStatus");
+  if (!navigator.geolocation) { status.textContent = "GPS tidak tersedia di browser ini"; return; }
+  btn.textContent = "⏳ Mengambil GPS…";
+  btn.disabled = true;
+  status.textContent = "";
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const acc = Math.round(pos.coords.accuracy);
+      document.getElementById("cpLat").value = lat.toFixed(6);
+      document.getElementById("cpLng").value = lng.toFixed(6);
+      status.textContent = `✓ Didapat: ${lat.toFixed(5)}, ${lng.toFixed(5)} · Akurasi ±${acc}m`;
+      status.style.color = acc < 50 ? "var(--green)" : "var(--amber)";
+      btn.textContent = "📍 Ambil Lokasi Saat Ini";
+      btn.disabled = false;
+    },
+    err => {
+      status.textContent = "GPS gagal: " + err.message;
+      status.style.color = "var(--red)";
+      btn.textContent = "📍 Ambil Lokasi Saat Ini";
+      btn.disabled = false;
+    },
+    { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
+  );
+}
+
 // ── Tambah ──
 async function addCheckpoint() {
   const id       = document.getElementById("cpId").value.trim().toUpperCase();
   const name     = document.getElementById("cpName").value.trim();
   const floor    = document.getElementById("cpFloor").value.trim();
   const interval = parseInt(document.getElementById("cpInterval").value);
+  const lat      = parseFloat(document.getElementById("cpLat").value) || HOTEL_LAT;
+  const lng      = parseFloat(document.getElementById("cpLng").value) || HOTEL_LNG;
+  const radius   = parseInt(document.getElementById("cpRadius").value) || 50;
   if (!id || !name) { alert("Isi ID dan Nama Lokasi!"); return; }
   if (checkpoints.find(c => c.id === id)) { alert("ID " + id + " sudah ada!"); return; }
 
-  const cp = {id, name, floor, interval, synced: false};
+  const cp = {id, name, floor, interval, lat, lng, radius, synced: false};
   checkpoints.push(cp);
   saveLocalCache();
   renderAll();
@@ -237,12 +302,16 @@ async function addCheckpoint() {
   // Reset form
   document.getElementById("cpName").value  = "";
   document.getElementById("cpFloor").value = "";
+  document.getElementById("cpLat").value   = "";
+  document.getElementById("cpLng").value   = "";
+  document.getElementById("cpRadius").value = "50";
+  document.getElementById("locAmbilStatus").textContent = "";
   autoIncrementId();
 
   // Sync ke Sheet
   setSyncStatus("syncing", "Menyimpan " + id + " ke Google Sheets…");
   try {
-    const d = await gasPost({action:"saveCheckpoint", checkpoint: {id,name,floor,interval}});
+    const d = await gasPost({action:"saveCheckpoint", checkpoint: {id,name,floor,interval,lat,lng,radius}});
     if (d.status === "ok" || d.status === "updated") {
       checkpoints = checkpoints.map(c => c.id===id ? {...c, synced:true} : c);
       saveLocalCache();
@@ -282,7 +351,7 @@ async function loadDefaultCheckpoints() {
   renderAll();
   setSyncStatus("syncing", "Menyimpan " + checkpoints.length + " checkpoint ke Sheets…");
   try {
-    const d = await gasPost({action:"batchSaveCheckpoints", checkpoints: DEFAULTS});
+    const d = await gasPost({action:"batchSaveCheckpoints", checkpoints: DEFAULTS.map(c => ({id:c.id,name:c.name,floor:c.floor,interval:c.interval,lat:c.lat,lng:c.lng,radius:c.radius}))});
     if (d.status === "ok") {
       checkpoints = checkpoints.map(c => ({...c, synced:true}));
       saveLocalCache();
@@ -325,17 +394,23 @@ function renderAll() {
 function renderTable() {
   const tbody = document.getElementById("cpTbody");
   if (!checkpoints.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);font-family:var(--mono);font-size:12px;">Belum ada checkpoint</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--muted);font-family:var(--mono);font-size:12px;">Belum ada checkpoint</td></tr>';
     return;
   }
-  tbody.innerHTML = checkpoints.map(c => `
-    <tr>
+  tbody.innerHTML = checkpoints.map(c => {
+    const hasGps = c.lat && c.lng && parseFloat(c.lat) !== 0;
+    const gpsIcon = hasGps
+      ? `<span title="GPS: ${parseFloat(c.lat).toFixed(4)}, ${parseFloat(c.lng).toFixed(4)} · R:${c.radius||50}m" style="color:var(--green);cursor:help;">🔒</span>`
+      : `<span title="Koordinat belum dikonfigurasi" style="color:var(--amber);cursor:help;">⚠️</span>`;
+    return `<tr>
       <td style="font-family:var(--mono);font-size:12px;color:var(--amber);">${c.id}</td>
       <td style="font-size:13px;">${c.name}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">${c.interval}m</td>
+      <td style="text-align:center;">${gpsIcon}</td>
       <td><span class="sync-icon ${c.synced?'ok':'pending'}" title="${c.synced?'Tersimpan di Sheets':'Belum tersinkron'}">${c.synced?'✓':'⏳'}</span></td>
       <td><button class="btn-del" onclick="removeCheckpoint('${c.id}')">✕</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function renderQRGrid() {
@@ -344,15 +419,21 @@ function renderQRGrid() {
     grid.innerHTML = `<div class="empty-state"><div style="font-size:40px;margin-bottom:12px;">📷</div><div>Belum ada QR Code.</div><div style="margin-top:8px;">Tambah checkpoint atau klik <strong style="color:var(--amber)">Load Default Hotel</strong></div></div>`;
     return;
   }
-  grid.innerHTML = checkpoints.map(c => `
-    <div class="qr-card" id="card_${c.id}">
+  grid.innerHTML = checkpoints.map(c => {
+    const hasGps = c.lat && c.lng && parseFloat(c.lat) !== 0;
+    const gpsTag = hasGps
+      ? `<div style="font-size:9px;font-family:var(--mono);color:#22c55e;margin-top:4px;letter-spacing:.04em;">🔒 GPS LOCK · R:${c.radius||50}m</div>`
+      : `<div style="font-size:9px;font-family:var(--mono);color:#f0a500;margin-top:4px;">⚠️ koordinat belum diset</div>`;
+    return `<div class="qr-card" id="card_${c.id}">
       <span class="sheet-badge ${c.synced?'synced':'pending'} no-print">${c.synced?'✓ Sheets':'⏳ Lokal'}</span>
       <div class="hotel-name">🏨 LOTUS GARDEN <span>HOTEL</span></div>
       <div class="qr-box" id="qr_${c.id}"></div>
       <div class="cp-name">${c.name}</div>
       <div class="cp-id">${c.id} · ${c.interval} menit</div>
       <div class="cp-floor">${c.floor||''}</div>
-    </div>`).join('');
+      ${gpsTag}
+    </div>`;
+  }).join('');
 
   checkpoints.forEach(c => {
     const el = document.getElementById("qr_" + c.id);
