@@ -166,15 +166,16 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyRLSVbq-wQQTXoMpWGt1GI
 let checkpoints = [];
 
 const DEFAULTS = [
-  {id:"CP01",name:"Lobi Utama",    floor:"Lantai 1 · Depan",   interval:60},
-  {id:"CP02",name:"Parkir Depan",  floor:"Area Parkir",         interval:60},
-  {id:"CP03",name:"Kolam Renang",  floor:"Lantai 1 · Belakang", interval:90},
-  {id:"CP04",name:"Restoran",      floor:"Lantai 1 · Timur",    interval:60},
-  {id:"CP05",name:"Lift Utama",    floor:"Lobi Lantai 1",       interval:45},
-  {id:"CP06",name:"Koridor Lt 2",  floor:"Lantai 2",            interval:90},
-  {id:"CP07",name:"Koridor Lt 3",  floor:"Lantai 3",            interval:90},
-  {id:"CP08",name:"Back Office",   floor:"Lantai 1 · Belakang", interval:120},
-  {id:"CP09",name:"Area Dapur",    floor:"Lantai 1 · Service",  interval:90},
+  {id:"CP01", name:"Area Genset",            floor:"Lantai 1",  interval:60},
+  {id:"CP02", name:"Area Hall",              floor:"Lantai 2",  interval:60},
+  {id:"CP03", name:"Area Depan Office",      floor:"Lantai 2",  interval:60},
+  {id:"CP04", name:"Area Linen HK",          floor:"Lantai 2",  interval:60},
+  {id:"CP05", name:"Area Bar Lama",          floor:"Lantai 1",  interval:60},
+  {id:"CP06", name:"Area Junior Bawah",      floor:"Lantai 1",  interval:60},
+  {id:"CP07", name:"Area Business Atas",     floor:"Lantai 2",  interval:60},
+  {id:"CP08", name:"Depan Kitchen/Stewart",  floor:"Lantai 1",  interval:60},
+  {id:"CP09", name:"Lorong Superior",        floor:"Lantai 1",  interval:60},
+  {id:"CP10", name:"Depan FO",               floor:"Lantai 2",  interval:60},
 ];
 
 // ── Sync status ──
@@ -358,7 +359,7 @@ function renderQRGrid() {
     if (el && !el.hasChildNodes()) {
       try {
         new QRCode(el, {
-          text: c.id,
+          text: c.id,  // Plain ID saja — lebih sederhana, lebih mudah dibaca scanner
           width:220, height:220, colorDark:"#000000", colorLight:"#ffffff",
           correctLevel: QRCode.CorrectLevel.L
         });
