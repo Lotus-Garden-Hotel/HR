@@ -246,6 +246,47 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:va
   border-top:1px solid var(--border); flex-shrink:0;
 }
 
+/* ── GPS LOCK SECURITY SECTION ── */
+.gps-lock-section {
+  margin:14px 0 4px;
+  border:1px solid var(--border); border-radius:10px; overflow:hidden;
+}
+.gps-lock-badge {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px; font-size:13px; font-family:var(--mono);
+  font-weight:600; letter-spacing:.02em; transition:background .3s, color .3s;
+}
+.gps-lock-badge.loading { background:rgba(139,148,158,.1); color:var(--muted); }
+.gps-lock-badge.valid   { background:rgba(34,197,94,.12);  color:var(--green); border-bottom:1px solid rgba(34,197,94,.2); }
+.gps-lock-badge.warning { background:rgba(240,165,0,.12);  color:var(--amber); border-bottom:1px solid rgba(240,165,0,.2); }
+.gps-lock-badge.danger  { background:rgba(239,68,68,.12);  color:var(--red);   border-bottom:1px solid rgba(239,68,68,.2); }
+.gps-lock-detail {
+  padding:8px 14px; font-size:11px; font-family:var(--mono);
+  color:var(--muted); background:var(--bg3); line-height:1.5;
+}
+.lock-spin {
+  display:inline-block; width:12px; height:12px; flex-shrink:0;
+  border:2px solid currentColor; border-top-color:transparent;
+  border-radius:50%; animation:lockSpin .6s linear infinite;
+}
+@keyframes lockSpin { to{transform:rotate(360deg)} }
+.gps-distance-bar {
+  height:4px; background:var(--bg3); border-radius:0 0 10px 10px; overflow:hidden;
+}
+.gps-distance-fill {
+  height:100%; border-radius:2px; transition:width .6s ease;
+}
+.gps-distance-fill.ok   { background:var(--green); }
+.gps-distance-fill.warn { background:var(--amber); }
+.gps-distance-fill.bad  { background:var(--red); }
+
+/* Block overlay when GPS invalid */
+.btn-confirm.blocked {
+  background:rgba(239,68,68,.15) !important;
+  border:1px solid rgba(239,68,68,.4) !important;
+  color:var(--red) !important; cursor:not-allowed !important;
+}
+
 /* ── SUCCESS TOAST ── */
 #toast {
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
@@ -360,11 +401,24 @@ html,body { height:100%; background:var(--bg); color:var(--text); font-family:va
     <div class="sub">Periksa data sebelum mengirim</div>
     <div class="confirm-row"><span class="k">Lokasi</span><span class="v" id="cf_loc">-</span></div>
     <div class="confirm-row"><span class="k">Waktu</span><span class="v" id="cf_time">-</span></div>
-    <div class="confirm-row"><span class="k">GPS</span><span class="v" id="cf_gps">Mengambil…</span></div>
+    <div class="confirm-row"><span class="k">Koordinat</span><span class="v" id="cf_gps" style="font-size:11px;">Mengambil…</span></div>
     <div class="confirm-row"><span class="k">Petugas</span><span class="v" id="cf_user">-</span></div>
+
+    <!-- ══ GPS SECURITY LOCK ══ -->
+    <div class="gps-lock-section">
+      <div class="gps-lock-badge loading" id="gpsLockBadge">
+        <span class="lock-spin" id="lockSpin"></span>
+        <span id="gpsLockText">⏳ Memverifikasi lokasi GPS…</span>
+      </div>
+      <div class="gps-lock-detail" id="gpsLockDetail">Mengambil 2 sample GPS untuk validasi anti-spoofing…</div>
+      <div class="gps-distance-bar"><div class="gps-distance-fill" id="gpsDistFill" style="width:0%"></div></div>
+    </div>
+
     <div class="confirm-btns">
       <button class="btn-confirm no" onclick="cancelConfirm()">Batal</button>
-      <button class="btn-confirm yes" onclick="submitPatroli()">Kirim ✓</button>
+      <button class="btn-confirm yes blocked" id="btnSubmitPatroli" onclick="submitPatroli()" disabled>
+        <span id="submitLabel">Verifikasi…</span>
+      </button>
     </div>
   </div>
 </div>
@@ -383,9 +437,10 @@ let currentUser   = null;
 let pendingData   = null;
 let todayLogs     = [];
 let html5Scanner  = null;   // html5-qrcode instance
-let cpCache       = {};     // { CP01: {id,name,floor}, ... }
+let cpCache       = {};     // { CP01: {id,name,floor,lat,lng,radius}, ... }
 let flashlightOn  = false;  // state senter
 let activeStream  = null;   // MediaStream aktif untuk torch
+let gpsSecResult  = null;   // hasil verifikasi GPS terakhir
 
 // ── IndexedDB ──
 let db;
@@ -833,47 +888,218 @@ function onQRScanned(raw) {
     shift: getShift()
   };
   document.getElementById("confirmModal").classList.remove("hidden");
-  getGPS();
+
+  // Reset GPS lock UI → loading state, submit diblokir dulu
+  setLockUI("loading", "⏳ Mengambil sample GPS #1…", "Harap diam di lokasi checkpoint");
+  enableSubmit(false);
+  gpsSecResult = null;
+  document.getElementById("gpsDistFill").style.width = "0%";
+  document.getElementById("gpsDistFill").className = "gps-distance-fill";
+
+  // Jalankan verifikasi GPS secara async
+  verifyGPSLock(checkpointId).then(r => { gpsSecResult = r; });
 }
 
-function getGPS() {
+// ══════════════════════════════════════════
+//  GPS SECURITY MODULE — Anti Fake Location
+// ══════════════════════════════════════════
+const GPS_SEC = {
+  MAX_ACCURACY:    150,   // m  — akurasi buruk, GPS tidak valid
+  SPOOF_ACCURACY:    3,   // m  — akurasi terlalu sempurna → curiga fake
+  MAX_INTER_SPEED:  30,   // m/s — kecepatan antar 2 sample: >30 = mustahil = mock location
+  SAMPLE_DELAY:   1800,   // ms — jeda antara sample 1 & 2
+  DEFAULT_RADIUS:   50,   // m  — radius default jika CP belum ada koordinat
+};
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (lat2 - lat1) * r, dLng = (lng2 - lng1) * r;
+  const a = Math.sin(dLat/2)**2
+          + Math.cos(lat1*r) * Math.cos(lat2*r) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function gpsOnce() {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      p => resolve({
+        lat: p.coords.latitude,
+        lng: p.coords.longitude,
+        acc: p.coords.accuracy,
+        ts:  p.timestamp
+      }),
+      e => reject(e),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  });
+}
+
+async function verifyGPSLock(cpId) {
+  gpsSecResult = null;
+
+  // ── Tidak ada GPS di perangkat ──
   if (!navigator.geolocation) {
-    document.getElementById("cf_gps").textContent = "GPS tidak tersedia";
-    pendingData.lat = null; pendingData.lng = null;
-    return;
+    setLockUI("warning", "⚠️ GPS tidak tersedia", "Patroli dicatat tanpa verifikasi lokasi");
+    enableSubmit(true, "warning");
+    return { status:"no_gps" };
   }
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const lat = pos.coords.latitude.toFixed(6);
-      const lng = pos.coords.longitude.toFixed(6);
-      document.getElementById("cf_gps").textContent = lat + ", " + lng;
-      pendingData.lat = parseFloat(lat);
-      pendingData.lng = parseFloat(lng);
-    },
-    () => {
-      document.getElementById("cf_gps").textContent = "Gagal dapat GPS";
-      pendingData.lat = null; pendingData.lng = null;
-    },
-    { timeout:8000, enableHighAccuracy:true }
-  );
+
+  setLockUI("loading", "⏳ Mengambil sample GPS #1…", "Harap diam di lokasi checkpoint");
+
+  // ── Sample 1 ──
+  let s1;
+  try { s1 = await gpsOnce(); }
+  catch(e) {
+    setLockUI("warning", "⚠️ GPS gagal — izin ditolak atau timeout", e.message || "");
+    enableSubmit(true, "warning");
+    return { status:"error", msg: e.message };
+  }
+
+  // Akurasi buruk langsung
+  if (s1.acc > GPS_SEC.MAX_ACCURACY) {
+    setLockUI("warning", `⚠️ GPS tidak akurat (±${Math.round(s1.acc)}m)`,
+      "Pindah ke area lebih terbuka atau dekat jendela · Diizinkan dengan catatan");
+    document.getElementById("cf_gps").textContent = s1.lat.toFixed(6)+", "+s1.lng.toFixed(6)+" ±"+Math.round(s1.acc)+"m";
+    if (pendingData) { pendingData.lat = s1.lat; pendingData.lng = s1.lng; pendingData.gpsAcc = s1.acc; }
+    enableSubmit(true, "warning");
+    return { status:"low_acc", lat:s1.lat, lng:s1.lng, acc:s1.acc };
+  }
+
+  document.getElementById("cf_gps").textContent = s1.lat.toFixed(6)+", "+s1.lng.toFixed(6)+" ±"+Math.round(s1.acc)+"m";
+  if (pendingData) { pendingData.lat = s1.lat; pendingData.lng = s1.lng; pendingData.gpsAcc = s1.acc; }
+
+  setLockUI("loading", "⏳ Verifikasi sample GPS #2…", `Sample 1: ${s1.lat.toFixed(5)}, ${s1.lng.toFixed(5)}`);
+  await new Promise(r => setTimeout(r, GPS_SEC.SAMPLE_DELAY));
+
+  // ── Sample 2 ──
+  let s2;
+  try { s2 = await gpsOnce(); }
+  catch { s2 = s1; } // fallback: pakai s1 lagi jika s2 gagal
+
+  // ── ANTI-SPOOF: Cek kecepatan antar 2 sample ──
+  const dist12   = haversine(s1.lat, s1.lng, s2.lat, s2.lng);
+  const timeDiff = Math.max((s2.ts - s1.ts) / 1000, 0.5); // seconds
+  const speed    = dist12 / timeDiff; // m/s
+
+  if (speed > GPS_SEC.MAX_INTER_SPEED) {
+    setLockUI("danger",
+      "🚫 MOCK LOCATION TERDETEKSI!",
+      `Kecepatan posisi antar sample: ${speed.toFixed(0)} m/s ≈ ${(speed*3.6).toFixed(0)} km/h · Mustahil secara fisik · Matikan "Mock Location" / "Developer Options" di perangkat`
+    );
+    enableSubmit(false);
+    // Log percobaan fake
+    if (pendingData) pendingData.gpsFlag = "SPOOFED_SPEED_"+speed.toFixed(0)+"mps";
+    return { status:"spoofed", speed };
+  }
+
+  // Rata-rata koordinat dari 2 sample
+  const lat = (s1.lat + s2.lat) / 2;
+  const lng = (s1.lng + s2.lng) / 2;
+  const acc = Math.max(s1.acc, s2.acc);
+  document.getElementById("cf_gps").textContent = lat.toFixed(6)+", "+lng.toFixed(6)+" ±"+Math.round(acc)+"m";
+  if (pendingData) { pendingData.lat = lat; pendingData.lng = lng; pendingData.gpsAcc = acc; }
+
+  // ── ANTI-SPOOF: Akurasi terlalu sempurna ──
+  const suspectAcc = acc < GPS_SEC.SPOOF_ACCURACY;
+
+  // ── CEK KOORDINAT CHECKPOINT ──
+  const cp = cpCache[cpId];
+  const hasCoords = cp && cp.lat && cp.lng && parseFloat(cp.lat) !== 0;
+
+  if (!hasCoords) {
+    setLockUI("warning", "⚠️ Koordinat checkpoint belum dikonfigurasi",
+      `GPS diterima: ${lat.toFixed(5)}, ${lng.toFixed(5)} · Akurasi ±${Math.round(acc)}m · Admin perlu set koordinat di QR Generator`
+    );
+    enableSubmit(true, "warning");
+    return { status:"no_coords", lat, lng, acc };
+  }
+
+  const cpLat   = parseFloat(cp.lat);
+  const cpLng   = parseFloat(cp.lng);
+  const radius  = parseInt(cp.radius) || GPS_SEC.DEFAULT_RADIUS;
+  const distance = Math.round(haversine(lat, lng, cpLat, cpLng));
+  const pct     = Math.min((distance / radius) * 100, 100);
+
+  // Update distance bar
+  const fill = document.getElementById("gpsDistFill");
+  fill.style.width = pct + "%";
+  fill.className = "gps-distance-fill " + (distance <= radius ? (pct < 60 ? "ok" : "warn") : "bad");
+
+  if (distance <= radius) {
+    if (suspectAcc) {
+      setLockUI("warning",
+        `⚠️ Posisi valid — akurasi mencurigakan (±${Math.round(acc)}m)`,
+        `Jarak ke ${cp.name}: ${distance}m · Batas: ${radius}m · GPS terlalu sempurna, dicatat untuk review`
+      );
+      if (pendingData) pendingData.gpsFlag = "SUSPECT_ACCURACY";
+      enableSubmit(true, "warning");
+    } else {
+      setLockUI("valid",
+        `🔒 Lokasi Terverifikasi`,
+        `Jarak ke ${cp.name}: ${distance}m · Batas: ${radius}m · Akurasi GPS ±${Math.round(acc)}m`
+      );
+      enableSubmit(true, "valid");
+    }
+    return { status:"valid", lat, lng, acc, distance, radius };
+  } else {
+    setLockUI("danger",
+      `❌ Anda TIDAK berada di lokasi checkpoint!`,
+      `Jarak Anda: ${distance}m dari ${cp.name} · Batas maks: ${radius}m · Harap bergerak ke lokasi yang benar`
+    );
+    if (pendingData) pendingData.gpsFlag = "OUT_OF_RANGE_"+distance+"m";
+    enableSubmit(false);
+    return { status:"out_of_range", lat, lng, acc, distance, radius };
+  }
+}
+
+function setLockUI(state, text, detail) {
+  const badge  = document.getElementById("gpsLockBadge");
+  const textEl = document.getElementById("gpsLockText");
+  const detEl  = document.getElementById("gpsLockDetail");
+  const spin   = document.getElementById("lockSpin");
+  badge.className = "gps-lock-badge " + state;
+  textEl.textContent = text;
+  detEl.textContent  = detail || "";
+  if (spin) spin.style.display = (state === "loading") ? "inline-block" : "none";
+}
+
+function enableSubmit(enabled, state) {
+  const btn   = document.getElementById("btnSubmitPatroli");
+  const label = document.getElementById("submitLabel");
+  btn.disabled = !enabled;
+  btn.className = enabled
+    ? (state === "warning" ? "btn-confirm yes" : "btn-confirm yes")
+    : "btn-confirm no blocked";
+  label.textContent = enabled
+    ? (state === "warning" ? "Kirim ⚠️" : "Kirim ✓")
+    : "Diblokir 🔒";
 }
 
 function cancelConfirm() {
   document.getElementById("confirmModal").classList.add("hidden");
-  pendingData = null;
+  gpsSecResult = null;
+  pendingData  = null;
 }
 
 async function submitPatroli() {
   if (!pendingData) return;
+
+  // Final security gate — blokir jika masih loading atau sudah terkonfirmasi buruk
+  const blocked = ["out_of_range","spoofed"];
+  if (gpsSecResult && blocked.includes(gpsSecResult.status)) {
+    showToast("🚫 Submit diblokir — verifikasi GPS gagal");
+    return;
+  }
+
   document.getElementById("confirmModal").classList.add("hidden");
   const data = { ...pendingData };
-  pendingData = null;
+  pendingData = null; gpsSecResult = null;
 
   // Add to local log immediately — tampilkan nama lokasi bukan ID mentah
   todayLogs.unshift({
     checkpoint: data.displayName || data.cpName || data.checkpoint,
     time: new Date(data.timestamp).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}),
-    gps: data.lat ? data.lat+","+data.lng : "N/A",
+    gps: data.lat ? data.lat.toFixed(5)+","+data.lng.toFixed(5) : "N/A",
     shift: data.shift,
     status: navigator.onLine ? "ok" : "pending"
   });
