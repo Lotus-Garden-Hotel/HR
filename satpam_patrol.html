@@ -615,8 +615,7 @@ function openScanner() {
   document.getElementById("scanModal").classList.remove("hidden");
   document.getElementById("scanZone").classList.add("active");
   document.getElementById("scanStatus").textContent = "Memulai kamera…";
-  scanAttempts = 0;
-  lastScanTime = 0;
+  scanAttempts = 0; lastScanTime = 0;
   startCamera();
 }
 function closeScanner() {
@@ -626,7 +625,6 @@ function closeScanner() {
 }
 async function startCamera() {
   try {
-    // Preferensikan kamera belakang, fallback ke kamera manapun
     let stream_;
     try {
       stream_ = await navigator.mediaDevices.getUserMedia({
@@ -639,8 +637,7 @@ async function startCamera() {
     const vid = document.getElementById("qrVideo");
     vid.srcObject = stream;
 
-    // Multi-event fallback: 'playing' paling reliable tapi beberapa Android
-    // hanya trigger 'canplay' atau 'loadeddata' — tangkap ketiganya
+    // Multi-event fallback untuk berbagai Android browser
     let scanStarted = false;
     const startScan = () => {
       if (scanStarted) return;
@@ -652,7 +649,7 @@ async function startCamera() {
     vid.addEventListener("playing",    startScan, { once: true });
     vid.addEventListener("canplay",    startScan, { once: true });
     vid.addEventListener("loadeddata", startScan, { once: true });
-    // Fallback timeout — jika semua event gagal, mulai paksa setelah 1.5 detik
+    // Timeout fallback 1.5 detik
     setTimeout(() => { if (!scanStarted && stream) startScan(); }, 1500);
 
     vid.play().catch(err => {
@@ -667,42 +664,39 @@ function stopCamera() {
   if (rafId) { cancelAnimationFrame(rafId); rafId=null; }
   if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
 }
-// Throttle scan: cukup proses setiap 150ms (tidak perlu 60fps)
+// ── Scan throttle vars ──
 let lastScanTime = 0;
 let scanAttempts = 0;
 
 function tick(now) {
   if (!scanning) return;
 
-  // Throttle — skip frame jika belum 150ms sejak scan terakhir
-  if (now - lastScanTime < 150) {
-    rafId = requestAnimationFrame(tick); return;
-  }
+  // Throttle: proses setiap 200ms cukup (hemat CPU, lebih stabil)
+  if (now - lastScanTime < 200) { rafId = requestAnimationFrame(tick); return; }
   lastScanTime = now;
 
   const vid    = document.getElementById("qrVideo");
   const canvas = document.getElementById("scanCanvas");
 
-  // Tunggu sampai video benar-benar punya frame
   if (vid.readyState < vid.HAVE_ENOUGH_DATA || vid.videoWidth === 0 || vid.paused) {
     rafId = requestAnimationFrame(tick); return;
   }
 
-  // Gambar dengan resolusi asli video (jsQR butuh pixel 1:1)
   const w = vid.videoWidth;
   const h = vid.videoHeight;
-  if (canvas.width !== w || canvas.height !== h) {
-    canvas.width  = w;
-    canvas.height = h;
-  }
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  // ── Brightness & contrast boost untuk kondisi gelap ──
+  // filter CSS tidak mempengaruhi getImageData, gunakan manual lewat ctx.filter
+  ctx.filter = "contrast(1.4) brightness(1.2)";
   ctx.drawImage(vid, 0, 0, w, h);
+  ctx.filter = "none";
 
   const img  = ctx.getImageData(0, 0, w, h);
-  const code = jsQR(img.data, img.width, img.height, {
-    inversionAttempts: "attemptBoth"
-  });
+  const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "attemptBoth" });
 
   if (code && code.data) {
     scanning = false;
@@ -710,26 +704,57 @@ function tick(now) {
     closeScanner();
     onQRScanned(code.data);
   } else {
-    // Update counter agar user tahu scan aktif berjalan
     scanAttempts++;
-    if (scanAttempts % 5 === 0) {
-      document.getElementById("scanStatus").textContent = "Menunggu QR Code… (" + scanAttempts + " frame)";
+    if (scanAttempts % 10 === 0) {
+      document.getElementById("scanStatus").textContent =
+        "Menunggu QR Code… (" + scanAttempts + "× scan aktif)";
     }
     rafId = requestAnimationFrame(tick);
   }
 }
 
+// ── Checkpoint Cache (diload saat login) ──
+let cpCache = {}; // { "CP01": "Area Genset", ... }
+
+async function loadCheckpointsCache() {
+  // Coba dari localStorage dulu (offline-first)
+  try {
+    const local = localStorage.getItem("checkpoints_cache");
+    if (local) {
+      const list = JSON.parse(local);
+      list.forEach(cp => { cpCache[cp.id] = cp; });
+    }
+  } catch {}
+  // Refresh dari GAS jika online
+  if (navigator.onLine) {
+    try {
+      const r = await fetch(GAS_URL + "?action=checkpoints", { cache: "no-store" });
+      const d = await r.json();
+      if (d.status === "ok" && d.checkpoints) {
+        cpCache = {};
+        d.checkpoints.forEach(cp => { cpCache[cp.id] = cp; });
+        localStorage.setItem("checkpoints_cache", JSON.stringify(d.checkpoints));
+      }
+    } catch {}
+  }
+}
+
 // ── After QR Scanned ──
 function onQRScanned(raw) {
-  // QR dari qr_generator.html mengandung JSON: {id, name, floor, interval}
-  // checkpoint = ID (kolom D di GAS), cpName = nama lokasi (kolom E di GAS)
-  let checkpointId = raw;
-  let checkpointName = raw;
+  // QR dari qr_generator BARU hanya berisi ID (misal: "CP02")
+  // QR lama masih berisi JSON — handle keduanya
+  let checkpointId = raw.trim();
+  let checkpointName = raw.trim();
   try {
     const j = JSON.parse(raw);
-    checkpointId   = j.id   || j.name || raw;  // ID checkpoint untuk GAS
-    checkpointName = j.name || j.id   || raw;  // Nama tampil untuk user
-  } catch {}
+    checkpointId   = j.id   || j.name || raw;
+    checkpointName = j.name || j.id   || raw;
+  } catch {
+    // raw = plain ID (format baru) → lookup nama dari cache
+    if (cpCache[checkpointId]) {
+      checkpointName = cpCache[checkpointId].name || checkpointId;
+    }
+  }
   const now   = new Date();
   const timeStr = now.toLocaleTimeString("id-ID", {hour:"2-digit",minute:"2-digit"});
   document.getElementById("cf_loc").textContent  = checkpointName;
@@ -826,6 +851,7 @@ function showToast(msg) {
 // ── Init ──
 window.addEventListener("DOMContentLoaded", async () => {
   await initDB();
+  loadCheckpointsCache(); // Load checkpoint names untuk lookup setelah scan QR
   updateQueueUI();
   setInterval(updateQueueUI, 10000);
   setInterval(syncQueue, 30000);
