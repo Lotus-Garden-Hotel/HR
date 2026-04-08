@@ -343,16 +343,19 @@ const HOTEL_LAT = -7.816500;
 const HOTEL_LNG = 112.012500;
 
 const DEFAULTS = [
-  {id:"CP01", name:"Area Genset",           floor:"Lantai 1", interval:60, lat:-7.816600, lng:112.012300, radius:40},
-  {id:"CP02", name:"Area Hall",             floor:"Lantai 2", interval:60, lat:-7.816400, lng:112.012500, radius:50},
-  {id:"CP03", name:"Area Depan Office",     floor:"Lantai 2", interval:60, lat:-7.816300, lng:112.012600, radius:40},
-  {id:"CP04", name:"Area Linen HK",         floor:"Lantai 2", interval:60, lat:-7.816200, lng:112.012400, radius:40},
-  {id:"CP05", name:"Area Bar Lama",         floor:"Lantai 1", interval:60, lat:-7.816700, lng:112.012200, radius:45},
-  {id:"CP06", name:"Area Junior Bawah",     floor:"Lantai 1", interval:60, lat:-7.816800, lng:112.012500, radius:40},
-  {id:"CP07", name:"Area Business Atas",    floor:"Lantai 2", interval:60, lat:-7.816100, lng:112.012700, radius:45},
-  {id:"CP08", name:"Depan Kitchen/Stewart", floor:"Lantai 1", interval:60, lat:-7.816900, lng:112.012300, radius:40},
-  {id:"CP09", name:"Lorong Superior",       floor:"Lantai 1", interval:60, lat:-7.817000, lng:112.012600, radius:45},
-  {id:"CP10", name:"Depan FO",              floor:"Lantai 2", interval:60, lat:-7.816000, lng:112.012800, radius:50},
+  // Data GPS dari sheet Checkpoints Lotus Garden Hotel
+  // CP tanpa GPS → lat:"", lng:"" → validasi dilewati otomatis
+  {id:"CP01", name:"Area Genset",            floor:"Lantai 1", interval:60, lat:"",          lng:""},
+  {id:"CP02", name:"Area Hall",              floor:"Lantai 2", interval:60, lat:-7.806543,   lng:112.005134},
+  {id:"CP03", name:"Area Depan Office",      floor:"Lantai 2", interval:60, lat:-7.806543,   lng:112.005134},
+  {id:"CP04", name:"Area Linen HK",          floor:"Lantai 2", interval:60, lat:-7.806543,   lng:112.005134},
+  {id:"CP05", name:"Area Bar Lama",          floor:"Lantai 1", interval:60, lat:-7.806543,   lng:112.005134},
+  {id:"CP06", name:"Area Junior Bawah",      floor:"Lantai 1", interval:60, lat:"",          lng:""},
+  {id:"CP07", name:"Area Business A",        floor:"Lantai 2", interval:60, lat:"",          lng:""},
+  {id:"CP08", name:"Depan Kitchen/Steward",  floor:"Lantai 1", interval:60, lat:-7.806525,   lng:112.005219},
+  {id:"CP09", name:"Lorong Superior",        floor:"Lantai 1", interval:60, lat:-7.806525,   lng:112.005218},
+  {id:"CP10", name:"Depan FO",               floor:"Lantai 2", interval:60, lat:-7.806543,   lng:112.005134},
+  // CP11–CP20: tambah via form "+ Generate QR" atau isi manual di sheet Checkpoints
 ];
 
 // ── Sync status ──

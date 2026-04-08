@@ -1111,6 +1111,7 @@ async function submitPatroli() {
       const r = await fetch(GAS_URL, { method:"POST", headers:{"Content-Type":"text/plain"}, body:JSON.stringify(data) });
       const d = await r.json();
       if (d.status === "success") { showToast("✓ Patroli Tercatat!"); }
+      else if (d.status === "duplicate") { showToast("⏱️ " + (d.message||"Duplikat")); }
       else showToast("⚠️ " + (d.message||"Error"));
     } catch {
       await addToQueue(data);
