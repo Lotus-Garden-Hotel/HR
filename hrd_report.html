@@ -486,7 +486,7 @@ function renderTable() {
       <td class="loc">${r.checkpoint||"–"}</td>
       <td><span style="font-size:11px;font-family:var(--mono);padding:3px 8px;border-radius:4px;${r.shift==="siang"?"background:rgba(250,204,21,.1);color:#facc15":"background:rgba(129,140,248,.1);color:#818cf8"}">${r.shift==="siang"?"☀️ SIANG":"🌙 MALAM"}</span></td>
       <td class="mono" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;">${r.gps||"–"}</td>
-      <td><span class="${r.status||'ok'}" style="font-size:11px;font-family:var(--mono);">${r.status==="ok"?"✓ OK":"⏳ Antrian"}</span></td>
+      <td><span class="${r.status||'OK'}" style="font-size:11px;font-family:var(--mono);">${r.status==="OK"?"✓ OK":"⏳ Antrian"}</span></td>
     </tr>`).join('');
 
   document.getElementById("pageInfo").textContent = `Menampilkan ${start+1}–${end} dari ${filtered.length} data`;
