@@ -14,6 +14,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
@@ -790,27 +791,64 @@ function exportCSV() {
 }
 
 // ════════════════════════════════
-//  EXPORT EXCEL (XLSX via HTML table trick)
+//  EXPORT EXCEL — SheetJS (.xlsx binary, 3 sheet)
 // ════════════════════════════════
 function exportXLSX() {
-  const from=document.getElementById("fFrom").value;
-  const to=document.getElementById("fTo").value;
-  // Buat HTML table yang bisa dibuka Excel
-  const header=["No","Tanggal","Waktu","Nama Petugas","NIK","Checkpoint","Shift","GPS","Status"];
-  const rows=filtered.map((r,i)=>[i+1,r.date,r.time,r.nama,r.nik,r.checkpoint,r.shift,r.gps,(r.status||"").toUpperCase()]);
-  const html=`<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>
-  <head><meta charset='UTF-8'><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
-  <x:Name>Log Patroli</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
-  </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
-  <body><table border="1">
-  <thead><tr style="background:#161b22;color:#f0a500;">${header.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
-  <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c||""}</td>`).join("")}</tr>`).join("")}</tbody>
-  </table></body></html>`;
-  const blob=new Blob([html],{type:"application/vnd.ms-excel;charset=utf-8;"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download=`log_patroli_${from}_${to}.xls`;
-  a.click();
+  if (typeof XLSX === "undefined") {
+    alert("Library Excel belum siap, coba lagi sebentar."); return;
+  }
+  const from = document.getElementById("fFrom").value;
+  const to   = document.getElementById("fTo").value;
+
+  // ── Sheet 1: Log Detail ──
+  const logHeader = ["No","Tanggal","Waktu","Nama Petugas","NIK","Checkpoint","Shift","GPS","Status"];
+  const logRows   = filtered.map((r,i) => [
+    i+1, r.date, r.time, r.nama, r.nik,
+    r.checkpoint, r.shift==="siang"?"Siang":"Malam",
+    r.gps||"N/A", (r.status||"").toUpperCase()==="OK"?"OK":"Pending"
+  ]);
+  const wsLog = XLSX.utils.aoa_to_sheet([logHeader, ...logRows]);
+  // Lebar kolom otomatis
+  wsLog["!cols"] = [
+    {wch:5},{wch:12},{wch:8},{wch:18},{wch:12},
+    {wch:20},{wch:8},{wch:24},{wch:9}
+  ];
+
+  // ── Sheet 2: Rekap per Petugas ──
+  const totalDays = Math.round((new Date(to)-new Date(from))/86400000)+1;
+  const byGuard   = {};
+  filtered.forEach(r => {
+    if (!byGuard[r.nama]) byGuard[r.nama] = {nik:r.nik, days:new Set(), scans:0};
+    byGuard[r.nama].days.add(r.date);
+    byGuard[r.nama].scans++;
+  });
+  const cpCount = checkpointsList.length || 1;
+  const rekapHeader = ["Nama Petugas","NIK","Hari Aktif","Hari Absen","Total Scan","Avg Scan/Hari","Kepatuhan %","Nilai"];
+  const rekapRows   = Object.entries(byGuard).sort((a,b)=>b[1].scans-a[1].scans).map(([nama,d]) => {
+    const aktif = d.days.size;
+    const pct   = Math.min(100, Math.round(d.scans/(cpCount*totalDays)*100));
+    const grade = pct>=80?"Baik":pct>=60?"Cukup":pct>=40?"Kurang":"Buruk";
+    return [nama, d.nik||"", aktif, totalDays-aktif, d.scans, +(d.scans/Math.max(1,aktif)).toFixed(1), pct+"%", grade];
+  });
+  const wsRekap = XLSX.utils.aoa_to_sheet([rekapHeader, ...rekapRows]);
+  wsRekap["!cols"] = [{wch:18},{wch:12},{wch:10},{wch:10},{wch:11},{wch:14},{wch:12},{wch:8}];
+
+  // ── Sheet 3: Gap Patroli ──
+  const gapHeader = ["Petugas","Tanggal","Shift","Scan Sebelum","Checkpoint Sebelum","Scan Sesudah","Checkpoint Sesudah","Gap (menit)","Status Gap"];
+  const gapRows   = gapData.map(g => {
+    const status = g.gapMin>=180?"Kritis":g.gapMin>=120?"Perlu Perhatian":"Minor";
+    return [g.nama, g.date, g.shift, g.prevTime, g.prevCP, g.currTime, g.currCP, g.gapMin, status];
+  });
+  const wsGap = XLSX.utils.aoa_to_sheet([gapHeader, ...gapRows]);
+  wsGap["!cols"] = [{wch:16},{wch:12},{wch:7},{wch:10},{wch:22},{wch:10},{wch:22},{wch:13},{wch:18}];
+
+  // ── Workbook ──
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, wsLog,   "Log Patroli");
+  XLSX.utils.book_append_sheet(wb, wsRekap, "Rekap Petugas");
+  XLSX.utils.book_append_sheet(wb, wsGap,   "Gap Patroli");
+
+  XLSX.writeFile(wb, `log_patroli_${from}_${to}.xlsx`);
 }
 
 // ════════════════════════════════
