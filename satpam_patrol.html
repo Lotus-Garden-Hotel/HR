@@ -904,11 +904,11 @@ function onQRScanned(raw) {
 //  GPS SECURITY MODULE — Anti Fake Location
 // ══════════════════════════════════════════
 const GPS_SEC = {
-  MAX_ACCURACY:    150,   // m  — akurasi buruk, GPS tidak valid
+  MAX_ACCURACY:    50,   // m  — akurasi buruk, GPS tidak valid
   SPOOF_ACCURACY:    3,   // m  — akurasi terlalu sempurna → curiga fake
   MAX_INTER_SPEED:  30,   // m/s — kecepatan antar 2 sample: >30 = mustahil = mock location
   SAMPLE_DELAY:   1800,   // ms — jeda antara sample 1 & 2
-  DEFAULT_RADIUS:   50,   // m  — radius default jika CP belum ada koordinat
+  DEFAULT_RADIUS:   30,   // m  — radius default jika CP belum ada koordinat
 };
 
 function haversine(lat1, lng1, lat2, lng2) {
