@@ -1,150 +1,124 @@
 # 🌸 Training Portal - Lotus Garden Hotel
-### By Waringin Hospitality | PWA + Google Drive
+### PWA + Google Drive | By Waringin Hospitality
 
-![PWA](https://img.shields.io/badge/PWA-Ready-green)
+![PWA](https://img.shields.io/badge/PWA-Ready-brightgreen)
 ![GAS](https://img.shields.io/badge/Backend-Google%20Apps%20Script-blue)
-![GitHub Pages](https://img.shields.io/badge/Hosting-GitHub%20Pages-black)
-![License](https://img.shields.io/badge/License-Private-red)
+![Host](https://img.shields.io/badge/Hosting-GitHub%20Pages-black)
+![Free](https://img.shields.io/badge/Cost-Free-gold)
 
 ---
 
-## 📁 Struktur Repo
+## 📁 Struktur Subfolder
 
 ```
-lotus-training-portal/
-├── training.html      ← App utama (PWA)
-├── manifest.json      ← PWA config (install di HP)
-├── sw.js              ← Service Worker (offline support)
-├── Code.gs            ← Backend Google Apps Script
-├── icons/             ← App icons semua ukuran
-│   ├── icon-72.png
-│   ├── icon-96.png
-│   ├── icon-128.png
-│   ├── icon-144.png
-│   ├── icon-152.png
-│   ├── icon-192.png
-│   ├── icon-384.png
-│   └── icon-512.png
-└── README.md
-```
-
----
-
-## 🏗️ Arsitektur
-
-```
-GitHub Pages (Frontend PWA)          Google Apps Script (Backend API)
-├── training.html   ←── fetch ───→   Code.gs
-├── manifest.json                    └── Google Drive
-├── sw.js                                 ├── 📁 Front Office
-└── icons/                                │   └── 📁 April 2025
-                                          ├── 📁 Housekeeping
-                                          └── dst...
+repo-github-anda/
+└── training-portal/          ← subfolder (tidak konflik dengan sw.js/manifest.json lain)
+    ├── training.html          ← App utama PWA
+    ├── manifest.json          ← PWA config (scope: /training-portal/)
+    ├── sw.js                  ← Service Worker (scope: /training-portal/)
+    ├── offline.html           ← Fallback halaman offline
+    ├── Code.gs                ← Backend Google Apps Script (backup)
+    ├── _headers               ← Security & cache headers
+    ├── .gitignore
+    ├── README.md
+    └── icons/
+        ├── icon-72.png
+        ├── icon-96.png
+        ├── icon-128.png
+        ├── icon-144.png
+        ├── icon-152.png
+        ├── icon-192.png
+        ├── icon-384.png
+        └── icon-512.png
 ```
 
 ---
 
-## 🚀 Setup & Deploy
+## 🏗️ Arsitektur Sistem
 
-### Step 1 — GitHub Pages
+```
+GitHub Pages                     Google Apps Script (GAS)
+/training-portal/                Code.gs (API Backend)
+├── training.html  ──fetch──►   doGet(?action=...)   ──►  Google Drive
+├── manifest.json               doPost({action:...})       ID: 1W9N3_m5643...
+├── sw.js                       └── jsonOut(result)        ├── 📁 Front Office
+└── icons/                                                 │   └── 📁 Mei 2025
+                                                           │       ├── 📁 OJT Batch 1
+                                                           │       └── 📁 Fire Drill
+                                                           └── 📁 dst...
+```
 
-1. Fork / clone repo ini
-2. Buka **Settings** → **Pages**
-3. Source: **Deploy from branch** → `main` → `/ (root)`
-4. Save → URL: `https://username.github.io/lotus-training-portal/training.html`
+---
 
-### Step 2 — Google Apps Script
+## 🚀 Setup Deployment
 
-1. Buka [script.google.com](https://script.google.com)
-2. **New Project** → nama: `Training Portal Lotus Garden`
+### Step 1 — Upload ke GitHub
+1. Upload folder `training-portal/` ke repo GitHub Anda
+2. Buka **Settings → Pages → Source: Deploy from branch → main → / (root)**
+3. URL app: `https://username.github.io/repo-name/training-portal/training.html`
+
+### Step 2 — Setup Google Apps Script
+1. Buka [script.google.com](https://script.google.com) → **New Project**
+2. Rename project: `Training Portal Lotus Garden`
 3. Paste isi `Code.gs` ke editor
-4. **Ganti** `ID_FOLDER_INDUK` dengan ID folder Google Drive Anda:
-   ```javascript
-   const ID_FOLDER_INDUK = "1ABC...xyz"; // ID folder Drive Anda
-   ```
-5. **Deploy** → **New Deployment** → **Web App**:
+4. Folder Drive sudah terkonfigurasi: `1W9N3_m5643SPFklC1w07bWZPIGJif5et`
+5. **Deploy → New Deployment → Web App:**
    - Execute as: `Me`
    - Who has access: `Anyone`
 6. Copy URL deployment
 
-### Step 3 — Hubungkan ke Frontend
-
-Di `training.html` baris ini sudah terisi URL GAS:
-```javascript
-const GAS_URL = 'https://script.google.com/macros/s/AKfycb.../exec';
+### Step 3 — GAS URL sudah terpasang
+File `training.html` sudah menggunakan:
+```
+https://script.google.com/macros/s/AKfycbzc8c.../exec
 ```
 
 ### Step 4 — Inisialisasi Folder Drive
-
 1. Buka app → klik ⚙️ di header
-2. Konfirmasi → sistem buat folder otomatis:
-```
-📁 [Folder Induk Drive]
-├── 📁 Front Office
-├── 📁 Housekeeping
-├── 📁 F&B Product
-├── 📁 Engineering
-├── 📁 Accounting
-└── 📁 Human Resources
-```
+2. Konfirmasi → sistem buat folder otomatis semua departemen
 
 ---
 
-## 📱 Install PWA di HP
+## 📱 Install PWA
 
 ### Android (Chrome):
-1. Buka URL app di Chrome
-2. Ketuk **⋮** → **"Add to Home Screen"**
-3. Ketuk **"Add"** ✅
+Menu **⋮ → Add to Home Screen → Add** ✅
 
 ### iPhone (Safari):
-1. Buka URL app di Safari
-2. Ketuk ikon **Share** → **"Add to Home Screen"**
-3. Ketuk **"Add"** ✅
+**Share → Add to Home Screen → Add** ✅
 
 ---
 
-## ✨ Fitur
+## ✨ Fitur Lengkap
 
 | Fitur | Keterangan |
 |-------|-----------|
-| 📸 Upload Foto | Kamera langsung atau galeri |
-| 💧 Watermark Otomatis | Tanggal, jam, dept, lokasi, branding |
-| 🗜️ Kompresi | Maks 1200px, JPEG 80% |
-| 📁 Folder Bulan | Otomatis sesuai bulan berjalan |
-| 📂 Sub-Kegiatan | Custom, staff buat sendiri |
-| 🔍 Pencarian | Cari dept, bulan, kegiatan |
-| 📊 Log Sheets | Setiap upload tercatat otomatis |
-| 📶 Offline Support | Service Worker cache app shell |
-| 📲 Installable | PWA — bisa install di HP |
-| 🌙 Install Banner | Prompt install otomatis |
+| 📸 Upload Foto | Kamera langsung / galeri |
+| 💧 Watermark | Tanggal, jam, dept, lokasi, logo |
+| 🗜️ Kompres | Maks 1200px · JPEG 80% |
+| 📁 Folder Bulan | Otomatis (Mei 2025, Juni 2025...) |
+| 📂 Sub-Kegiatan | Custom per kegiatan training |
+| 🔍 Pencarian | Cari by dept/bulan/kegiatan |
+| 📊 Log Sheets | Setiap upload dicatat otomatis |
+| 📶 Offline | Service Worker cache app shell |
+| 📲 Installable | PWA — install di HP |
+| 🔔 Update Banner | Notif auto-update tersedia |
 
 ---
 
-## 🔧 Konfigurasi
+## ⚙️ Konfigurasi di training.html
 
-### Tambah Departemen Baru:
-Di `Code.gs`:
 ```javascript
-const DEPARTMENTS = [
-  "Front Office",
-  "Housekeeping",
-  // tambah di sini:
-  "Sales & Marketing",
-];
+const GAS_URL = 'https://script.google.com/macros/s/.../exec';
+const BASE    = '/training-portal';
 ```
 
-Di `training.html` bagian `DEPT_SVG` dan `ICONS`, tambahkan entry baru.
+## ⚙️ Konfigurasi di Code.gs
 
-### Ganti GAS URL:
 ```javascript
-// training.html baris pertama script
-const GAS_URL = 'https://script.google.com/macros/s/YOUR_ID/exec';
+const ID_FOLDER_INDUK = "1W9N3_m5643SPFklC1w07bWZPIGJif5et";
 ```
 
 ---
 
-## 📞 Support
-**Lotus Garden Hotel & Restaurant**  
-By Waringin Hospitality  
-*Training Portal PWA v3.1*
+*Training Portal PWA v3.1 · Lotus Garden Hotel & Restaurant · Waringin Hospitality*
